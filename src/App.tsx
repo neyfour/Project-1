@@ -33,6 +33,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsConditions from './pages/TermsConditions';
 import TrackOrder from './pages/TrackOrder';
 import Wishlist from './pages/Wishlist';
+import ViewDetails from './pages/ViewDetails';
 
 
 function App() {
@@ -77,6 +78,7 @@ function App() {
             <Route path="/terms" element={<TermsConditions />} />
             <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/wishlist" element={<Wishlist />} />
+            {/* <Route path='/orderdetail' element={<ViewDetails/>} /> */}
 
             <Route 
               path="/matrix" 
@@ -99,8 +101,12 @@ function App() {
               element={user ? <ProductAnalytics /> : <Navigate to="/auth" />} 
             />
             <Route 
-              path="/orders"
+              path="/matrix/orders" 
               element={user ? <Orders /> : <Navigate to="/auth" />} 
+            />
+            <Route
+              path="/matrix/viewdetails"
+              element={user ? <ViewDetails /> : <Navigate to="/auth" />}
             />
             <Route path="/auth" element={<Auth />} />
             </>
