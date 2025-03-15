@@ -1,18 +1,18 @@
-import { Link } from 'react-router-dom';
-import { 
-  Store, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Youtube, 
-  CreditCard, 
-  Shield, 
-  Truck, 
-  HelpCircle 
-} from 'lucide-react';
+import { Link } from "react-router-dom"
+import {
+  Store,
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+  CreditCard,
+  Shield,
+  Truck,
+  HelpCircle,
+} from "lucide-react"
 
 export default function Footer() {
   return (
@@ -29,7 +29,8 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-gray-400 mb-6">
-              Your premier destination for high-quality sports equipment and gear. Empowering athletes and sports enthusiasts since 2023.
+              Your premier destination for high-quality sports equipment and gear. Empowering athletes and sports
+              enthusiasts since 2023.
             </p>
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
@@ -52,25 +53,39 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-6 border-b border-gray-700 pb-2">Quick Links</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/" className="text-gray-400 hover:text-indigo-400 transition-colors">Home</Link>
+                <Link to="/" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Home
+                </Link>
               </li>
               <li>
-                <Link to="/shop" className="text-gray-400 hover:text-indigo-400 transition-colors">Shop</Link>
+                <Link to="/shop" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Shop
+                </Link>
               </li>
               <li>
-                <Link to="/categories" className="text-gray-400 hover:text-indigo-400 transition-colors">Categories</Link>
+                <Link to="/categories" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Categories
+                </Link>
               </li>
               <li>
-                <Link to="/promotions" className="text-gray-400 hover:text-indigo-400 transition-colors">Promotions</Link>
+                <Link to="/promotions" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Promotions
+                </Link>
               </li>
               <li>
-                <Link to="/become-seller" className="text-gray-400 hover:text-indigo-400 transition-colors">Become a Seller</Link>
+                <Link to="/become-seller" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Become a Seller
+                </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-400 hover:text-indigo-400 transition-colors">Contact Us</Link>
+                <Link to="/contact" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Contact Us
+                </Link>
               </li>
               <li>
-                <Link to="/forum" className="text-gray-400 hover:text-indigo-400 transition-colors">Community Forum</Link>
+                <Link to="/forum" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Community Forum
+                </Link>
               </li>
             </ul>
           </div>
@@ -80,25 +95,39 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-6 border-b border-gray-700 pb-2">Customer Service</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/faq" className="text-gray-400 hover:text-indigo-400 transition-colors">FAQ</Link>
+                <Link to="/faq" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  FAQ
+                </Link>
               </li>
               <li>
-                <Link to="/shipping" className="text-gray-400 hover:text-indigo-400 transition-colors">Shipping Policy</Link>
+                <Link to="/shipping" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Shipping Policy
+                </Link>
               </li>
               <li>
-                <Link to="/returns" className="text-gray-400 hover:text-indigo-400 transition-colors">Returns & Refunds</Link>
+                <Link to="/returns" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Returns & Refunds
+                </Link>
               </li>
               <li>
-                <Link to="/privacy" className="text-gray-400 hover:text-indigo-400 transition-colors">Privacy Policy</Link>
+                <Link to="/privacy" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Privacy Policy
+                </Link>
               </li>
               <li>
-                <Link to="/terms" className="text-gray-400 hover:text-indigo-400 transition-colors">Terms & Conditions</Link>
+                <Link to="/terms" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Terms & Conditions
+                </Link>
               </li>
               <li>
-                <Link to="/track-order" className="text-gray-400 hover:text-indigo-400 transition-colors">Track Your Order</Link>
+                <Link to="/track-order" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Track Your Order
+                </Link>
               </li>
               <li>
-                <Link to="/affiliate" className="text-gray-400 hover:text-indigo-400 transition-colors">Affiliate Program</Link>
+                <Link to="/affiliate" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                  Affiliate Program
+                </Link>
               </li>
             </ul>
           </div>
@@ -139,7 +168,6 @@ export default function Footer() {
                 <Youtube className="w-5 h-5" />
               </a>
             </div>
-            
           </div>
         </div>
 
@@ -151,8 +179,16 @@ export default function Footer() {
               <h4 className="text-sm font-medium">Secure Payment</h4>
               <p className="text-xs text-gray-500">All major cards accepted</p> <br />
               <div className="flex space-x-6">
-                <img src="https://cdn-icons-png.flaticon.com/512/11647/11647799.png" alt="CashOnDelivery" className="h-6" />
-                <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa" className="h-6" />
+                <img
+                  src="https://cdn-icons-png.flaticon.com/512/11647/11647799.png"
+                  alt="CashOnDelivery"
+                  className="h-6"
+                />
+                <img
+                  src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png"
+                  alt="Visa"
+                  className="h-6"
+                />
                 <img src="https://cdn-icons-png.flaticon.com/512/11378/11378185.png" alt="Mastercard" className="h-6" />
                 <img src="https://cdn-icons-png.flaticon.com/512/12942/12942189.png" alt="PayPal" className="h-6" />
               </div>
@@ -173,7 +209,6 @@ export default function Footer() {
               <p className="text-xs text-gray-500">Always here to help</p>
             </div>
           </div>
-          
         </div>
 
         {/* Bottom Footer */}
@@ -184,5 +219,6 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  );
+  )
 }
+

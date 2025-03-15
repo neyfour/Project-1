@@ -1,54 +1,63 @@
-import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useStore } from '../store';
-import { Product } from '../types';
-import { Star, ShoppingCart, TrendingUp, ArrowRight, ChevronRight, ShoppingBag, Award, Users } from 'lucide-react';
-import LazyImage from '../components/LazyImage';
-import '../styles/Home.css';
+"use client"
+import { Link, useNavigate } from "react-router-dom"
+import { useStore } from "../store"
+import { Star, ShoppingCart, TrendingUp, ArrowRight, ChevronRight, ShoppingBag, Award, Users } from "lucide-react"
+import LazyImage from "../components/LazyImage"
+import "../styles/Home.css"
+import { toast } from "react-toastify"
 
 export default function Home() {
-  const navigate = useNavigate();
-  const products = useStore((state) => state.products);
-  const user = useStore((state) => state.user);
+  const navigate = useNavigate()
+  const products = useStore((state) => state.products)
+  const user = useStore((state) => state.user)
 
   // Sample data for demonstration
-  const featuredProducts = products.filter(product => product.rating >= 4.5).slice(0, 6);
-  const popularProducts = products.sort((a, b) => b.views_count - a.views_count).slice(0, 4);
+  const featuredProducts = products.filter((product) => product.rating >= 4.5).slice(0, 6)
+  const popularProducts = products.sort((a, b) => b.views_count - a.views_count).slice(0, 4)
 
   const categories = [
     {
-      id: 'soccer',
-      title: 'Soccer',
-      image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=80&w=800',
-      products: 245
+      id: "soccer",
+      title: "Soccer",
+      image: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=80&w=800",
+      products: 245,
     },
     {
-      id: 'basketball',
-      title: 'Basketball',
-      image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=800',
-      products: 189
+      id: "basketball",
+      title: "Basketball",
+      image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=800",
+      products: 189,
     },
     {
-      id: 'running',
-      title: 'Running',
-      image: 'https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&q=80&w=800',
-      products: 312
+      id: "running",
+      title: "Running",
+      image: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&q=80&w=800",
+      products: 312,
     },
     {
-      id: 'fitness',
-      title: 'Fitness',
-      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800',
-      products: 423
-    }
-  ];
+      id: "fitness",
+      title: "Fitness",
+      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800",
+      products: 423,
+    },
+  ]
 
   const handleGetStarted = () => {
     if (user) {
-      navigate('/matrix/products/add');
+      if (user.role === "seller") {
+        navigate("/seller/dashboard")
+      } else if (user.role === "superadmin" || user.role === "admin") {
+        navigate("/matrix")
+      } else if (user.seller_application) {
+        // If they've already applied
+        toast.info("Your seller application is being reviewed")
+      } else {
+        navigate("/become-seller")
+      }
     } else {
-      navigate('/auth');
+      navigate("/auth")
     }
-  };
+  }
 
   return (
     <div className="min-h-screen">
@@ -62,15 +71,11 @@ export default function Home() {
         />
         <div className="hero-content h-full flex items-center justify-center text-center">
           <div className="max-w-3xl px-4">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Discover Exceptional Sports Equipment
-            </h1>
-            <p className="text-xl text-gray-100 mb-8">
-              Join our community of athletes and sports enthusiasts
-            </p>
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">Discover Exceptional Sports Equipment</h1>
+            <p className="text-xl text-gray-100 mb-8">Join our community of athletes and sports enthusiasts</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => navigate('/shop')}
+                onClick={() => navigate("/shop")}
                 className="cta-button bg-white text-gray-900 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
               >
                 <ShoppingBag className="w-5 h-5" />
@@ -92,11 +97,9 @@ export default function Home() {
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Popular Products
-            </h2>
-            <Link 
-              to="/shop" 
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Popular Products</h2>
+            <Link
+              to="/shop"
               className="flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
             >
               View All
@@ -110,15 +113,9 @@ export default function Home() {
                 className="product-card bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300"
               >
                 <div className="relative h-64">
-                  <LazyImage
-                    src={product.image_url}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <LazyImage src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                   <div className="absolute top-3 right-3">
-                    <span className="px-2 py-1 bg-indigo-600 text-white text-xs font-medium rounded-full">
-                      Popular
-                    </span>
+                    <span className="px-2 py-1 bg-indigo-600 text-white text-xs font-medium rounded-full">Popular</span>
                   </div>
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute bottom-4 left-4 right-4">
@@ -159,11 +156,9 @@ export default function Home() {
       <section className="py-16 px-4 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Shop by Category
-            </h2>
-            <Link 
-              to="/categories" 
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Shop by Category</h2>
+            <Link
+              to="/categories"
               className="flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
             >
               All Categories
@@ -199,11 +194,9 @@ export default function Home() {
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Featured Products
-            </h2>
-            <Link 
-              to="/shop" 
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Featured Products</h2>
+            <Link
+              to="/shop"
               className="flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
             >
               View All
@@ -217,11 +210,7 @@ export default function Home() {
                 className="product-card bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
               >
                 <div className="relative h-64">
-                  <LazyImage
-                    src={product.image_url}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <LazyImage src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                   <div className="absolute top-3 right-3">
                     <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded-full">
                       Featured
@@ -271,7 +260,8 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Premium Quality</h3>
               <p className="text-gray-600 dark:text-gray-300">
-                All our products are carefully selected to ensure the highest quality standards for professional athletes and enthusiasts.
+                All our products are carefully selected to ensure the highest quality standards for professional
+                athletes and enthusiasts.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-700 rounded-xl shadow-sm p-8 text-center">
@@ -280,7 +270,8 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">AI-Powered Insights</h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Our advanced AI technology provides sellers with valuable market insights and sales predictions to optimize their business.
+                Our advanced AI technology provides sellers with valuable market insights and sales predictions to
+                optimize their business.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-700 rounded-xl shadow-sm p-8 text-center">
@@ -289,7 +280,8 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Community Focused</h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Join our growing community of sports enthusiasts, professional athletes, and successful sellers from around the world.
+                Join our growing community of sports enthusiasts, professional athletes, and successful sellers from
+                around the world.
               </p>
             </div>
           </div>
@@ -299,15 +291,13 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-indigo-600 dark:bg-indigo-700">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Start Selling Your Sports Equipment Today
-          </h2>
+          <h2 className="text-4xl font-bold text-white mb-6">Start Selling Your Sports Equipment Today</h2>
           <p className="text-xl text-indigo-100 mb-8">
             Join our community of successful sellers and reach athletes worldwide
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/shop')}
+              onClick={() => navigate("/shop")}
               className="bg-white text-indigo-600 px-8 py-3 rounded-full font-semibold hover:bg-indigo-50 transition-colors"
             >
               Explore Products
@@ -316,11 +306,12 @@ export default function Home() {
               onClick={handleGetStarted}
               className="bg-indigo-800 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-900 transition-colors"
             >
-              Become a Seller
+              {user?.role === "seller" ? "Seller Dashboard" : "Become a Seller"}
             </button>
           </div>
         </div>
       </section>
     </div>
-  );
+  )
 }
+

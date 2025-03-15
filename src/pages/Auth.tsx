@@ -1,26 +1,29 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Store, Mail, Lock, ArrowRight } from 'lucide-react';
-import { useStore } from '../store';
+"use client"
+
+import type React from "react"
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { Store, Mail, Lock, ArrowRight } from "lucide-react"
+import { useStore } from "../store"
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const navigate = useNavigate();
-  const setUser = useStore((state) => state.setUser);
+  const [isLogin, setIsLogin] = useState(true)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const navigate = useNavigate()
+  const setUser = useStore((state) => state.setUser)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (isLogin) {
       setUser({
-        id: '1',
+        id: "1",
         email: email,
-        full_name: 'Test User',
-      });
-      navigate('/matrix');
+        full_name: "Test User",
+      })
+      navigate("/matrix")
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -30,20 +33,18 @@ export default function Auth() {
           <div className="text-center mb-8">
             <Store className="w-12 h-12 text-indigo-600 mx-auto" />
             <h2 className="mt-6 text-3xl font-bold text-gray-900">
-              {isLogin ? 'Welcome back' : 'Create your account'}
+              {isLogin ? "Welcome back" : "Create your account"}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
               {isLogin
-                ? 'Sign in to manage your products and view insights'
-                : 'Join our community of successful sellers'}
+                ? "Sign in to manage your products and view insights"
+                : "Join our community of successful sellers"}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Email address</label>
               <div className="mt-1 relative">
                 <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input
@@ -57,9 +58,7 @@ export default function Auth() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
               <div className="mt-1 relative">
                 <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input
@@ -74,10 +73,7 @@ export default function Auth() {
 
             {isLogin && (
               <div className="flex items-center justify-end">
-                <button
-                  type="button"
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                >
+                <button type="button" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
                   Forgot password?
                 </button>
               </div>
@@ -87,7 +83,7 @@ export default function Auth() {
               type="submit"
               className="w-full flex items-center justify-center space-x-2 px-4 py-3 border border-transparent rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              <span>{isLogin ? 'Sign in' : 'Create account'}</span>
+              <span>{isLogin ? "Sign in" : "Create account"}</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </form>
@@ -99,7 +95,7 @@ export default function Auth() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">
-                  {isLogin ? 'New to Matrix Commerce?' : 'Already have an account?'}
+                  {isLogin ? "New to Matrix Commerce?" : "Already have an account?"}
                 </span>
               </div>
             </div>
@@ -108,7 +104,7 @@ export default function Auth() {
               onClick={() => setIsLogin(!isLogin)}
               className="mt-4 w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isLogin ? 'Create an account' : 'Sign in to your account'}
+              {isLogin ? "Create an account" : "Sign in to your account"}
             </button>
           </div>
         </div>
@@ -126,11 +122,13 @@ export default function Auth() {
           <div className="max-w-md text-center text-white">
             <h2 className="text-3xl font-bold mb-6">Transform Your Business with AI-Powered Insights</h2>
             <p className="text-lg text-gray-100">
-              Join thousands of successful sellers who use our platform to grow their business and reach customers worldwide.
+              Join thousands of successful sellers who use our platform to grow their business and reach customers
+              worldwide.
             </p>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
+

@@ -1,34 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Clock, ShoppingBag, Star, Trash2 } from 'lucide-react';
-import { useStore } from '../store';
-import { Product } from '../types';
-import LazyImage from '../components/LazyImage';
+"use client"
+
+import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
+import { Clock, ShoppingBag, Star, Trash2 } from "lucide-react"
+import { useStore } from "../store"
+import type { Product } from "../types"
+import LazyImage from "../components/LazyImage"
 
 export default function RecentlyViewed() {
   // In a real app, this would be stored in localStorage or a database
-  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
-  const products = useStore((state) => state.products);
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([])
+  const products = useStore((state) => state.products)
 
   useEffect(() => {
     // Simulate fetching recently viewed products
     // In a real app, this would come from localStorage or an API
-    const mockRecentlyViewed = products
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 8);
-    
-    setRecentlyViewed(mockRecentlyViewed);
-  }, [products]);
+    const mockRecentlyViewed = products.sort(() => 0.5 - Math.random()).slice(0, 8)
+
+    setRecentlyViewed(mockRecentlyViewed)
+  }, [products])
 
   const clearHistory = () => {
-    setRecentlyViewed([]);
+    setRecentlyViewed([])
     // In a real app, you would also clear localStorage or make an API call
-  };
+  }
 
   const removeItem = (productId: string) => {
-    setRecentlyViewed(prev => prev.filter(product => product.id !== productId));
+    setRecentlyViewed((prev) => prev.filter((product) => product.id !== productId))
     // In a real app, you would also update localStorage or make an API call
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
@@ -36,12 +36,8 @@ export default function RecentlyViewed() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Recently Viewed Products
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2">
-              Products you've viewed recently
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Recently Viewed Products</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">Products you've viewed recently</p>
           </div>
           {recentlyViewed.length > 0 && (
             <button
@@ -117,9 +113,7 @@ export default function RecentlyViewed() {
           <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
             <Clock className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No recently viewed products</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Products you view will appear here for easy access
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Products you view will appear here for easy access</p>
             <Link
               to="/shop"
               className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -130,5 +124,6 @@ export default function RecentlyViewed() {
         )}
       </div>
     </div>
-  );
+  )
 }
+

@@ -1,176 +1,162 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { User, Product, Theme } from '../types';
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
+import type { User, Product, Theme, Notification, ChatMessage, ChatRoom } from "../types"
+import { loginUser, registerUser, checkAuthStatus } from "../api/authApi"
 
 interface StoreState {
-  user: User | null;
-  products: Product[];
-  theme: Theme;
-  setUser: (user: User | null) => void;
-  setProducts: (products: Product[]) => void;
-  addProduct: (product: Product) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (productId: string) => void;
-  toggleTheme: () => void;
+  user: User | null
+  token: string | null
+  products: Product[]
+  theme: Theme
+  notifications: Notification[]
+  chatMessages: ChatMessage[]
+  chatRooms: ChatRoom[]
+  activeRoom: string | null
+  setUser: (user: User | null) => void
+  setToken: (token: string | null) => void
+  setProducts: (products: Product[]) => void
+  addProduct: (product: Product) => void
+  updateProduct: (product: Product) => void
+  deleteProduct: (productId: string) => void
+  toggleTheme: () => void
+  loginUser: (email: string, password: string) => Promise<void>
+  registerUser: (userData: { email: string; password: string; full_name: string; role?: string }) => Promise<void>
+  logoutUser: () => void
+  checkAuth: () => Promise<boolean>
+  applyForSeller: (applicationData: any) => Promise<void>
+  addNotification: (notification: Notification) => void
+  markNotificationAsRead: (notificationId: string) => void
+  clearNotifications: () => void
+  addChatMessage: (message: ChatMessage) => void
+  setChatRooms: (rooms: ChatRoom[]) => void
+  setActiveRoom: (roomId: string | null) => void
 }
-
-// Sample products data
-const sampleProducts: Product[] = [
-  {
-    id: '1',
-    user_id: '1',
-    title: 'Professional Soccer Ball',
-    description: 'FIFA-approved match ball with superior aerodynamics and durability. Perfect for professional matches and training.',
-    price: 129.99,
-    category: 'Soccer',
-    image_url: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=80&w=800',
-    created_at: '2024-03-15T10:00:00Z',
-    stock: 50,
-    rating: 4.8,
-    reviews_count: 125,
-    views_count: 1500,
-    clicks_count: 800,
-    sales_count: 89,
-    sku: 'SOC-PRO-001',
-    brand: 'Elite Sports',
-    sport_type: 'Soccer',
-    specifications: {
-      'Material': 'Premium synthetic leather',
-      'Size': '5',
-      'Weight': '450g',
-      'Color': 'White/Black',
-      'Technology': 'AeroPro™ Surface'
-    }
-  },
-  {
-    id: '2',
-    user_id: '1',
-    title: 'Premium Basketball',
-    description: 'Official size and weight basketball with superior grip and control. Ideal for indoor and outdoor courts.',
-    price: 89.99,
-    category: 'Basketball',
-    image_url: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=800',
-    created_at: '2024-03-14T09:30:00Z',
-    stock: 75,
-    rating: 4.7,
-    reviews_count: 98,
-    views_count: 1200,
-    clicks_count: 650,
-    sales_count: 72,
-    sku: 'BSK-PRO-002',
-    brand: 'Elite Sports',
-    sport_type: 'Basketball',
-    specifications: {
-      'Material': 'Composite leather',
-      'Size': '7',
-      'Weight': '620g',
-      'Color': 'Orange',
-      'Surface': 'Indoor/Outdoor'
-    }
-  },
-  {
-    id: '3',
-    user_id: '1',
-    title: 'Professional Running Shoes',
-    description: 'Lightweight and breathable running shoes with advanced cushioning technology. Perfect for marathon runners.',
-    price: 159.99,
-    category: 'Running',
-    image_url: 'https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&q=80&w=800',
-    created_at: '2024-03-13T08:45:00Z',
-    stock: 100,
-    rating: 4.9,
-    reviews_count: 156,
-    views_count: 2200,
-    clicks_count: 1100,
-    sales_count: 95,
-    sku: 'RUN-PRO-003',
-    brand: 'SpeedMax',
-    sport_type: 'Running',
-    specifications: {
-      'Material': 'Mesh and synthetic',
-      'Size Range': '7-13 US',
-      'Weight': '280g',
-      'Color': 'Black/Red',
-      'Technology': 'AirFlow™ System'
-    }
-  },
-  {
-    id: '4',
-    user_id: '1',
-    title: 'Yoga Mat Premium',
-    description: 'Extra thick and non-slip yoga mat with perfect cushioning and stability. Includes carrying strap.',
-    price: 79.99,
-    category: 'Yoga',
-    image_url: 'https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&q=80&w=800',
-    created_at: '2024-03-12T15:20:00Z',
-    stock: 120,
-    rating: 4.8,
-    reviews_count: 89,
-    views_count: 950,
-    clicks_count: 480,
-    sales_count: 65,
-    sku: 'YOG-PRO-004',
-    brand: 'ZenFit',
-    sport_type: 'Yoga',
-    specifications: {
-      'Material': 'TPE Eco-friendly foam',
-      'Thickness': '6mm',
-      'Size': '72" x 24"',
-      'Weight': '1.1kg',
-      'Features': 'Non-slip, Moisture-resistant'
-    }
-  },
-  {
-    id: '5',
-    user_id: '1',
-    title: 'Tennis Racket Pro',
-    description: 'Professional grade tennis racket with advanced string pattern and optimal weight distribution.',
-    price: 199.99,
-    category: 'Tennis',
-    image_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=800',
-    created_at: '2024-03-11T14:15:00Z',
-    stock: 45,
-    rating: 4.7,
-    reviews_count: 67,
-    views_count: 780,
-    clicks_count: 390,
-    sales_count: 42,
-    sku: 'TEN-PRO-005',
-    brand: 'PowerServe',
-    sport_type: 'Tennis',
-    specifications: {
-      'Material': 'Graphite composite',
-      'Weight': '300g',
-      'Head Size': '100 sq in',
-      'Balance': 'Head-light',
-      'String Pattern': '16x19'
-    }
-  }
-];
 
 export const useStore = create<StoreState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
-      products: sampleProducts,
-      theme: 'light',
+      token: null,
+      products: [],
+      theme: "light",
+      notifications: [],
+      chatMessages: [],
+      chatRooms: [],
+      activeRoom: null,
       setUser: (user) => set({ user }),
+      setToken: (token) => set({ token }),
       setProducts: (products) => set({ products }),
-      addProduct: (product) => set((state) => ({
-        products: [...state.products, product]
-      })),
-      updateProduct: (product) => set((state) => ({
-        products: state.products.map(p => p.id === product.id ? product : p)
-      })),
-      deleteProduct: (productId) => set((state) => ({
-        products: state.products.filter(p => p.id !== productId)
-      })),
-      toggleTheme: () => set((state) => ({
-        theme: state.theme === 'light' ? 'dark' : 'light'
-      })),
+      addProduct: (product) =>
+        set((state) => ({
+          products: [...state.products, product],
+        })),
+      updateProduct: (product) =>
+        set((state) => ({
+          products: state.products.map((p) => (p.id === product.id ? product : p)),
+        })),
+      deleteProduct: (productId) =>
+        set((state) => ({
+          products: state.products.filter((p) => p.id !== productId),
+        })),
+      toggleTheme: () =>
+        set((state) => ({
+          theme: state.theme === "light" ? "dark" : "light",
+        })),
+      loginUser: async (email, password) => {
+        try {
+          const userData = await loginUser(email, password)
+          set({ user: userData, token: localStorage.getItem("auth_token") || "sample-token" })
+        } catch (error) {
+          console.error("Login failed:", error)
+          throw error
+        }
+      },
+      registerUser: async (userData) => {
+        try {
+          const user = await registerUser(userData.full_name, userData.email, userData.password)
+          // After registration, log the user in
+          const loggedInUser = await loginUser(userData.email, userData.password)
+          set({ user: loggedInUser, token: localStorage.getItem("auth_token") || "sample-token" })
+        } catch (error) {
+          console.error("Registration failed:", error)
+          throw error
+        }
+      },
+      logoutUser: () => {
+        localStorage.removeItem("auth_token")
+        set({ user: null, token: null })
+      },
+      checkAuth: async () => {
+        try {
+          const user = await checkAuthStatus()
+          if (user) {
+            set({ user, token: localStorage.getItem("auth_token") || "sample-token" })
+            return true
+          }
+          return false
+        } catch (error) {
+          console.error("Auth check failed:", error)
+          set({ user: null, token: null })
+          return false
+        }
+      },
+      applyForSeller: async (applicationData) => {
+        try {
+          // In a real app, you would make an API call to submit the application
+          // For now, we'll just update the user object locally
+          const { user } = get()
+          if (!user) throw new Error("User not authenticated")
+
+          const updatedUser = {
+            ...user,
+            seller_application: {
+              status: "pending",
+              ...applicationData,
+              submitted_at: new Date().toISOString(),
+            },
+          }
+
+          set({ user: updatedUser })
+
+          // Add a notification for the superadmin (in a real app, this would be done on the server)
+          const notification: Notification = {
+            id: Date.now().toString(),
+            type: "seller_application",
+            title: "New Seller Application",
+            message: `${user.username || user.full_name} has applied to become a seller`,
+            user_id: "superadmin", // This would be the superadmin's ID in a real app
+            read: false,
+            created_at: new Date().toISOString(),
+            data: { applicant_id: user.id },
+          }
+
+          get().addNotification(notification)
+
+          return Promise.resolve()
+        } catch (error) {
+          console.error("Seller application failed:", error)
+          throw error
+        }
+      },
+      addNotification: (notification) =>
+        set((state) => ({
+          notifications: [notification, ...state.notifications],
+        })),
+      markNotificationAsRead: (notificationId) =>
+        set((state) => ({
+          notifications: state.notifications.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
+        })),
+      clearNotifications: () => set({ notifications: [] }),
+      addChatMessage: (message) =>
+        set((state) => ({
+          chatMessages: [...state.chatMessages, message],
+        })),
+      setChatRooms: (rooms) => set({ chatRooms: rooms }),
+      setActiveRoom: (roomId) => set({ activeRoom: roomId }),
     }),
     {
-      name: 'matrix-store',
-    }
-  )
-);
+      name: "matrix-store",
+    },
+  ),
+)
+

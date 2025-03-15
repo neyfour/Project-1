@@ -1,66 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Filter, Search, ArrowUpDown, Star, ShoppingCart } from 'lucide-react';
-import { useStore } from '../store';
-import { Product } from '../types';
-import '../styles/Categories.css';
+"use client"
+
+import { useState, useEffect } from "react"
+import { useParams, Link } from "react-router-dom"
+import { Filter, Search, Star, ShoppingCart } from "lucide-react"
+import { useStore } from "../store"
+import type { Product } from "../types"
+import "../styles/Categories.css"
 
 export default function CategoryProducts() {
-  const { category } = useParams();
-  const products = useStore((state) => state.products);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [sortBy, setSortBy] = useState('popular');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { category } = useParams()
+  const products = useStore((state) => state.products)
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [sortBy, setSortBy] = useState("popular")
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
-    let filtered = products.filter(
-      (product) => product.category.toLowerCase() === category?.toLowerCase()
-    );
+    let filtered = products.filter((product) => product.category.toLowerCase() === category?.toLowerCase())
 
     // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(
         (product) =>
           product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+          product.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
     }
 
     // Apply price filter
-    filtered = filtered.filter(
-      (product) => product.price >= priceRange[0] && product.price <= priceRange[1]
-    );
+    filtered = filtered.filter((product) => product.price >= priceRange[0] && product.price <= priceRange[1])
 
     // Apply sorting
     switch (sortBy) {
-      case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
-        break;
-      case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
-        break;
+      case "price-low":
+        filtered.sort((a, b) => a.price - b.price)
+        break
+      case "price-high":
+        filtered.sort((a, b) => b.price - a.price)
+        break
+      case "rating":
+        filtered.sort((a, b) => b.rating - a.rating)
+        break
       default: // 'popular'
-        filtered.sort((a, b) => b.views_count - a.views_count);
+        filtered.sort((a, b) => b.views_count - a.views_count)
     }
 
-    setFilteredProducts(filtered);
-  }, [products, category, sortBy, priceRange, searchQuery]);
+    setFilteredProducts(filtered)
+  }, [products, category, sortBy, priceRange, searchQuery])
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 capitalize">
-            {category} Products
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Explore our collection of premium {category} equipment and gear
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 capitalize">{category} Products</h1>
+          <p className="mt-2 text-gray-600">Explore our collection of premium {category} equipment and gear</p>
         </div>
 
         {/* Filters and Search */}
@@ -92,8 +86,8 @@ export default function CategoryProducts() {
                 <select
                   value={`${priceRange[0]}-${priceRange[1]}`}
                   onChange={(e) => {
-                    const [min, max] = e.target.value.split('-').map(Number);
-                    setPriceRange([min, max]);
+                    const [min, max] = e.target.value.split("-").map(Number)
+                    setPriceRange([min, max])
                   }}
                   className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
@@ -138,16 +132,12 @@ export default function CategoryProducts() {
                   <h3 className="text-lg font-semibold text-gray-900">{product.title}</h3>
                   <div className="flex items-center">
                     <Star className="w-4 h-4 text-yellow-400" />
-                    <span className="ml-1 text-sm font-medium text-gray-600">
-                      {product.rating.toFixed(1)}
-                    </span>
+                    <span className="ml-1 text-sm font-medium text-gray-600">{product.rating.toFixed(1)}</span>
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">{product.description}</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-indigo-600">
-                    ${product.price.toFixed(2)}
-                  </span>
+                  <span className="text-xl font-bold text-indigo-600">${product.price.toFixed(2)}</span>
                   <button className="p-2 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors">
                     <ShoppingCart className="w-5 h-5" />
                   </button>
@@ -164,5 +154,6 @@ export default function CategoryProducts() {
         )}
       </div>
     </div>
-  );
+  )
 }
+

@@ -1,94 +1,86 @@
-import React, { useState } from 'react';
-import { 
-  Tag, 
-  Calendar, 
-  Clock, 
-  Percent, 
-  ShoppingBag, 
-  Gift, 
-  ChevronRight, 
-  Copy, 
-  CheckCircle 
-} from 'lucide-react';
-import { useStore } from '../store';
-import toast from 'react-hot-toast';
+"use client"
+
+import { useState } from "react"
+import { Tag, Calendar, Clock, Percent, ShoppingBag, Gift, ChevronRight, Copy, CheckCircle } from "lucide-react"
+import { useStore } from "../store"
+import toast from "react-hot-toast"
 
 export default function Promotions() {
-  const [activeTab, setActiveTab] = useState('current');
-  const user = useStore((state) => state.user);
+  const [activeTab, setActiveTab] = useState("current")
+  const user = useStore((state) => state.user)
 
   // Sample promotions data
   const promotions = [
     {
-      id: 'SUMMER25',
-      title: 'Summer Sale',
-      description: 'Get 25% off on all summer sports equipment',
-      discount_type: 'percentage',
+      id: "SUMMER25",
+      title: "Summer Sale",
+      description: "Get 25% off on all summer sports equipment",
+      discount_type: "percentage",
       discount_value: 25,
       min_purchase: 50,
-      expiry_date: '2024-08-31',
-      categories: ['running', 'swimming', 'tennis'],
-      image_url: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&q=80&w=800'
+      expiry_date: "2024-08-31",
+      categories: ["running", "swimming", "tennis"],
+      image_url: "https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&q=80&w=800",
     },
     {
-      id: 'NEWUSER10',
-      title: 'New Customer Discount',
-      description: 'Save $10 on your first purchase',
-      discount_type: 'fixed',
+      id: "NEWUSER10",
+      title: "New Customer Discount",
+      description: "Save $10 on your first purchase",
+      discount_type: "fixed",
       discount_value: 10,
       min_purchase: 30,
-      expiry_date: '2024-12-31',
-      categories: ['all'],
-      image_url: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800'
+      expiry_date: "2024-12-31",
+      categories: ["all"],
+      image_url: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800",
     },
     {
-      id: 'BUNDLE20',
-      title: 'Bundle Discount',
-      description: 'Buy any 3 items and get 20% off',
-      discount_type: 'percentage',
+      id: "BUNDLE20",
+      title: "Bundle Discount",
+      description: "Buy any 3 items and get 20% off",
+      discount_type: "percentage",
       discount_value: 20,
       min_purchase: 0,
-      expiry_date: '2024-07-15',
-      categories: ['basketball', 'soccer', 'fitness'],
-      image_url: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=800'
+      expiry_date: "2024-07-15",
+      categories: ["basketball", "soccer", "fitness"],
+      image_url: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=800",
     },
     {
-      id: 'FREESHIP75',
-      title: 'Free Shipping',
-      description: 'Free shipping on orders over $75',
-      discount_type: 'shipping',
+      id: "FREESHIP75",
+      title: "Free Shipping",
+      description: "Free shipping on orders over $75",
+      discount_type: "shipping",
       discount_value: 100,
       min_purchase: 75,
-      expiry_date: '2024-09-30',
-      categories: ['all'],
-      image_url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800'
-    }
-  ];
+      expiry_date: "2024-09-30",
+      categories: ["all"],
+      image_url: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800",
+    },
+  ]
 
   // Filter promotions based on active tab
-  const filteredPromotions = promotions.filter(promo => {
-    const today = new Date();
-    const expiryDate = new Date(promo.expiry_date);
-    
-    if (activeTab === 'current') {
-      return expiryDate >= today;
+  const filteredPromotions = promotions.filter((promo) => {
+    const today = new Date()
+    const expiryDate = new Date(promo.expiry_date)
+
+    if (activeTab === "current") {
+      return expiryDate >= today
     } else {
-      return expiryDate < today;
+      return expiryDate < today
     }
-  });
+  })
 
   const getDaysRemaining = (expiryDate: string) => {
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const diffTime = expiry.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+    const today = new Date()
+    const expiry = new Date(expiryDate)
+    const diffTime = expiry.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
 
   const copyPromoCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast.success(`Promo code ${code} copied to clipboard!`);
-  };
+    navigator.clipboard.writeText(code)
+    toast.success(`Promo code ${code} copied to clipboard!`)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
@@ -98,9 +90,7 @@ export default function Promotions() {
           <div className="inline-block p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4">
             <Tag className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Special Offers & Promotions
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Special Offers & Promotions</h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Discover exclusive deals and discounts on our sports equipment
           </p>
@@ -121,8 +111,8 @@ export default function Promotions() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-2xl font-bold text-white">SUMMER25</span>
-                    <button 
-                      onClick={() => copyPromoCode('SUMMER25')}
+                    <button
+                      onClick={() => copyPromoCode("SUMMER25")}
                       className="ml-3 p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
                     >
                       <Copy className="w-4 h-4 text-white" />
@@ -130,7 +120,7 @@ export default function Promotions() {
                   </div>
                   <div className="flex items-center text-white">
                     <Clock className="w-4 h-4 mr-1" />
-                    <span className="text-sm">Expires in {getDaysRemaining('2024-08-31')} days</span>
+                    <span className="text-sm">Expires in {getDaysRemaining("2024-08-31")} days</span>
                   </div>
                 </div>
               </div>
@@ -139,9 +129,9 @@ export default function Promotions() {
               </button>
             </div>
             <div className="hidden md:block relative">
-              <img 
-                src="https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&q=80&w=800" 
-                alt="Summer Sale" 
+              <img
+                src="https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&q=80&w=800"
+                alt="Summer Sale"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-l from-transparent to-indigo-600/50"></div>
@@ -153,21 +143,21 @@ export default function Promotions() {
         <div className="mb-8">
           <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
-              onClick={() => setActiveTab('current')}
+              onClick={() => setActiveTab("current")}
               className={`px-6 py-3 font-medium text-sm ${
-                activeTab === 'current'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                activeTab === "current"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
               Current Promotions
             </button>
             <button
-              onClick={() => setActiveTab('expired')}
+              onClick={() => setActiveTab("expired")}
               className={`px-6 py-3 font-medium text-sm ${
-                activeTab === 'expired'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                activeTab === "expired"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
               Expired Promotions
@@ -178,20 +168,16 @@ export default function Promotions() {
         {/* Promotions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredPromotions.map((promotion) => {
-            const daysRemaining = getDaysRemaining(promotion.expiry_date);
-            const isExpired = daysRemaining <= 0;
-            
+            const daysRemaining = getDaysRemaining(promotion.expiry_date)
+            const isExpired = daysRemaining <= 0
+
             return (
-              <div 
+              <div
                 key={promotion.id}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all"
               >
                 <div className="relative h-48">
-                  <img 
-                    src={promotion.image_url} 
-                    alt={promotion.title} 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={promotion.image_url} alt={promotion.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4">
                     <h3 className="text-xl font-bold text-white">{promotion.title}</h3>
@@ -199,31 +185,29 @@ export default function Promotions() {
                 </div>
                 <div className="p-6">
                   <p className="text-gray-600 dark:text-gray-300 mb-4">{promotion.description}</p>
-                  
+
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
-                      {promotion.discount_type === 'percentage' ? (
+                      {promotion.discount_type === "percentage" ? (
                         <Percent className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-2" />
-                      ) : promotion.discount_type === 'fixed' ? (
+                      ) : promotion.discount_type === "fixed" ? (
                         <ShoppingBag className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-2" />
                       ) : (
                         <Gift className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-2" />
                       )}
                       <span className="font-medium text-gray-900 dark:text-white">
-                        {promotion.discount_type === 'percentage' 
-                          ? `${promotion.discount_value}% Off` 
-                          : promotion.discount_type === 'fixed'
+                        {promotion.discount_type === "percentage"
+                          ? `${promotion.discount_value}% Off`
+                          : promotion.discount_type === "fixed"
                             ? `$${promotion.discount_value} Off`
-                            : 'Free Shipping'}
+                            : "Free Shipping"}
                       </span>
                     </div>
                     {promotion.min_purchase > 0 && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        Min. ${promotion.min_purchase}
-                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Min. ${promotion.min_purchase}</span>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                       <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
@@ -232,14 +216,16 @@ export default function Promotions() {
                       </span>
                     </div>
                     {!isExpired && (
-                      <span className={`text-sm font-medium ${
-                        daysRemaining <= 3 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
-                      }`}>
+                      <span
+                        className={`text-sm font-medium ${
+                          daysRemaining <= 3 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                        }`}
+                      >
                         {daysRemaining} days left
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex-1 mr-4">
                       <div className="relative">
@@ -261,17 +247,17 @@ export default function Promotions() {
                       disabled={isExpired}
                       className={`px-4 py-2 rounded-lg flex items-center ${
                         isExpired
-                          ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700 transition-colors'
+                          ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                       }`}
                     >
-                      {isExpired ? 'Expired' : 'Apply'}
+                      {isExpired ? "Expired" : "Apply"}
                       {!isExpired && <ChevronRight className="w-4 h-4 ml-1" />}
                     </button>
                   </div>
                 </div>
               </div>
-            );
+            )
           })}
         </div>
 
@@ -279,21 +265,19 @@ export default function Promotions() {
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
             <Tag className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
-              {activeTab === 'current' ? 'No active promotions' : 'No expired promotions'}
+              {activeTab === "current" ? "No active promotions" : "No expired promotions"}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {activeTab === 'current' 
-                ? 'Check back later for new deals and discounts' 
-                : 'Previous promotions will appear here'}
+              {activeTab === "current"
+                ? "Check back later for new deals and discounts"
+                : "Previous promotions will appear here"}
             </p>
           </div>
         )}
 
         {/* How to Use Promo Codes */}
         <div className="mt-16 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            How to Use Promo Codes
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">How to Use Promo Codes</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -309,18 +293,14 @@ export default function Promotions() {
                 <ShoppingBag className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Step 2: Add to Cart</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Add eligible products to your shopping cart
-              </p>
+              <p className="text-gray-600 dark:text-gray-400">Add eligible products to your shopping cart</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Step 3: Apply at Checkout</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Paste the code in the promo code field during checkout
-              </p>
+              <p className="text-gray-600 dark:text-gray-400">Paste the code in the promo code field during checkout</p>
             </div>
           </div>
         </div>
@@ -340,7 +320,7 @@ export default function Promotions() {
               />
               <button
                 type="button"
-                onClick={() => toast.success('Thank you for subscribing!')}
+                onClick={() => toast.success("Thank you for subscribing!")}
                 className="px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
               >
                 Subscribe
@@ -350,5 +330,6 @@ export default function Promotions() {
         </div>
       </div>
     </div>
-  );
+  )
 }
+

@@ -1,46 +1,47 @@
-import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, MessageSquare, Clock } from 'lucide-react';
-import toast from 'react-hot-toast';
+"use client"
+
+import type React from "react"
+import { useState } from "react"
+import { Mail, Phone, MapPin, Send, MessageSquare, Clock } from "lucide-react"
+import toast from "react-hot-toast"
 
 export default function Contact() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
+    e.preventDefault()
+    setIsSubmitting(true)
+
     // Simulate API call
     setTimeout(() => {
-      toast.success('Your message has been sent successfully!');
+      toast.success("Your message has been sent successfully!")
       setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: ''
-      });
-      setIsSubmitting(false);
-    }, 1500);
-  };
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+      })
+      setIsSubmitting(false)
+    }, 1500)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Contact Us
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Contact Us</h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Have questions or need assistance? We're here to help!
           </p>
@@ -49,9 +50,7 @@ export default function Contact() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Form */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              Send Us a Message
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Send Us a Message</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -133,9 +132,7 @@ export default function Contact() {
           {/* Contact Information */}
           <div className="space-y-8">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Contact Information
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Contact Information</h2>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
@@ -163,21 +160,15 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Address</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      123 Sports Avenue, Athletic City
-                    </p>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      California, 90210, United States
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">123 Sports Avenue, Athletic City</p>
+                    <p className="text-gray-600 dark:text-gray-400">California, 90210, United States</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Business Hours
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Business Hours</h2>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -208,9 +199,7 @@ export default function Contact() {
                 <MessageSquare className="w-6 h-6" />
                 <h2 className="text-2xl font-bold">Need Immediate Help?</h2>
               </div>
-              <p className="mb-6">
-                Our customer support team is available for live chat during business hours.
-              </p>
+              <p className="mb-6">Our customer support team is available for live chat during business hours.</p>
               <button className="w-full py-3 bg-white text-indigo-600 rounded-lg font-medium hover:bg-indigo-50 transition-colors">
                 Start Live Chat
               </button>
@@ -233,5 +222,6 @@ export default function Contact() {
         </div>
       </div>
     </div>
-  );
+  )
 }
+

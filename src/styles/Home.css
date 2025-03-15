@@ -52,7 +52,7 @@
 }
 
 .cta-button::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -70,3 +70,4 @@
 .cta-button:hover::after {
   left: 100%;
 }
+

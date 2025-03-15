@@ -1,29 +1,32 @@
-import React, { useState } from 'react';
+"use client"
+
+import type React from "react"
+import { useState } from "react"
 
 const TrackOrder = () => {
-  const [orderId, setOrderId] = useState('');
-  const [email, setEmail] = useState('');
+  const [orderId, setOrderId] = useState("")
+  const [email, setEmail] = useState("")
   const [trackingResult, setTrackingResult] = useState<null | {
-    status: string;
-    location: string;
-    lastUpdate: string;
-  }>(null);
+    status: string
+    location: string
+    lastUpdate: string
+  }>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     // Simulated tracking result
     setTrackingResult({
-      status: 'In Transit',
-      location: 'Distribution Center',
+      status: "In Transit",
+      location: "Distribution Center",
       lastUpdate: new Date().toLocaleDateString(),
-    });
-  };
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
         <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Track Your Order</h1>
-        
+
         <div className="bg-white p-6 rounded-lg shadow-md">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -81,7 +84,8 @@ const TrackOrder = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default TrackOrder;
+export default TrackOrder
+

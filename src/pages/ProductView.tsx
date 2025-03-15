@@ -1,85 +1,91 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useStore } from '../store';
-import { 
-  ShoppingBag, 
-  Heart, 
-  Share2, 
-  Star, 
-  Truck, 
-  ShieldCheck, 
+"use client"
+
+import { useState, useEffect } from "react"
+import { useParams, Link } from "react-router-dom"
+import { useStore } from "../store"
+import {
+  ShoppingBag,
+  Heart,
+  Share2,
+  Star,
+  Truck,
+  ShieldCheck,
   RefreshCw,
   ChevronRight,
   Plus,
   Minus,
-  Check
-} from 'lucide-react';
-import toast from 'react-hot-toast';
+} from "lucide-react"
+import toast from "react-hot-toast"
 
 export default function ProductView() {
-  const { productId } = useParams();
-  const products = useStore((state) => state.products);
-  const product = products.find(p => p.id === productId);
-  
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState(0);
-  
+  const { productId } = useParams()
+  const products = useStore((state) => state.products)
+  const product = products.find((p) => p.id === productId)
+
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [quantity, setQuantity] = useState(1)
+  const [selectedVariant, setSelectedVariant] = useState(0)
+
   // For demo purposes, using placeholder images
   const productImages = [
-    product?.image_url || '',
-    'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=800'
-  ];
+    product?.image_url || "",
+    "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=800",
+  ]
 
-  const relatedProducts = products
-    .filter(p => p.category === product?.category && p.id !== product?.id)
-    .slice(0, 4);
+  const relatedProducts = products.filter((p) => p.category === product?.category && p.id !== product?.id).slice(0, 4)
 
   useEffect(() => {
     // Scroll to top when component mounts
-    window.scrollTo(0, 0);
-  }, [productId]);
+    window.scrollTo(0, 0)
+  }, [productId])
 
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-600 dark:text-gray-300">Product not found</p>
       </div>
-    );
+    )
   }
 
   const handleAddToCart = () => {
-    toast.success(`${product.title} added to cart!`);
-  };
+    toast.success(`${product.title} added to cart!`)
+  }
 
   const handleAddToWishlist = () => {
-    toast.success(`${product.title} added to wishlist!`);
-  };
+    toast.success(`${product.title} added to wishlist!`)
+  }
 
   const incrementQuantity = () => {
     if (quantity < product.stock) {
-      setQuantity(quantity + 1);
+      setQuantity(quantity + 1)
     }
-  };
+  }
 
   const decrementQuantity = () => {
     if (quantity > 1) {
-      setQuantity(quantity - 1);
+      setQuantity(quantity - 1)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumbs */}
         <nav className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 mb-8">
-          <Link to="/" className="hover:text-gray-900 dark:hover:text-white">Home</Link>
+          <Link to="/" className="hover:text-gray-900 dark:hover:text-white">
+            Home
+          </Link>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <Link to="/categories" className="hover:text-gray-900 dark:hover:text-white">Categories</Link>
+          <Link to="/categories" className="hover:text-gray-900 dark:hover:text-white">
+            Categories
+          </Link>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <Link to={`/categories/${product.category.toLowerCase()}`} className="hover:text-gray-900 dark:hover:text-white capitalize">
+          <Link
+            to={`/categories/${product.category.toLowerCase()}`}
+            className="hover:text-gray-900 dark:hover:text-white capitalize"
+          >
             {product.category}
           </Link>
           <ChevronRight className="w-4 h-4 mx-2" />
@@ -92,11 +98,7 @@ export default function ProductView() {
             {/* Product Images */}
             <div className="p-6 md:p-8">
               <div className="relative aspect-square rounded-lg overflow-hidden mb-4">
-                <img
-                  src={productImages[selectedImage]}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
+                <img src={productImages[selectedImage]} alt={product.title} className="w-full h-full object-cover" />
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {productImages.map((image, index) => (
@@ -105,9 +107,7 @@ export default function ProductView() {
                     onClick={() => setSelectedImage(index)}
                     title={`View image ${index + 1}`}
                     className={`aspect-square rounded-lg overflow-hidden border-2 ${
-                      selectedImage === index 
-                        ? 'border-indigo-600 dark:border-indigo-400' 
-                        : 'border-transparent'
+                      selectedImage === index ? "border-indigo-600 dark:border-indigo-400" : "border-transparent"
                     }`}
                   >
                     <img
@@ -134,34 +134,24 @@ export default function ProductView() {
                         {product.rating.toFixed(1)}
                       </span>
                       <span className="mx-1 text-gray-400">•</span>
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {product.reviews_count} reviews
-                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">{product.reviews_count} reviews</span>
                     </div>
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                    {product.title}
-                  </h1>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">
-                    {product.description}
-                  </p>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">{product.title}</h1>
+                  <p className="text-gray-600 dark:text-gray-300 mb-6">{product.description}</p>
                   <div className="flex items-baseline mb-6">
                     <span className="text-3xl font-bold text-gray-900 dark:text-white">
                       ${product.price.toFixed(2)}
                     </span>
                     {product.variants && product.variants.length > 0 && (
-                      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                        Base price
-                      </span>
+                      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Base price</span>
                     )}
                   </div>
 
                   {/* Variants */}
                   {product.variants && product.variants.length > 0 && (
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                        Available Options
-                      </h3>
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Available Options</h3>
                       <div className="flex flex-wrap gap-2">
                         {product.variants.map((variant, index) => (
                           <button
@@ -170,8 +160,8 @@ export default function ProductView() {
                             title={`Select variant ${variant.title}`}
                             className={`px-4 py-2 rounded-lg border ${
                               selectedVariant === index
-                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                                : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                                ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
+                                : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
                             }`}
                           >
                             {variant.title}
@@ -183,9 +173,7 @@ export default function ProductView() {
 
                   {/* Quantity */}
                   <div className="mb-6">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                      Quantity
-                    </h3>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Quantity</h3>
                     <div className="flex items-center">
                       <button
                         onClick={decrementQuantity}
@@ -199,7 +187,7 @@ export default function ProductView() {
                         min="1"
                         max={product.stock}
                         value={quantity}
-                        onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                        onChange={(e) => setQuantity(Number.parseInt(e.target.value) || 1)}
                         className="w-16 text-center border-y border-gray-300 dark:border-gray-600 py-2 text-gray-900 dark:text-white dark:bg-gray-700"
                         title="Quantity"
                       />
@@ -210,9 +198,7 @@ export default function ProductView() {
                       >
                         <Plus className="w-4 h-4" />
                       </button>
-                      <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">
-                        {product.stock} available
-                      </span>
+                      <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">{product.stock} available</span>
                     </div>
                   </div>
                 </div>
@@ -248,21 +234,15 @@ export default function ProductView() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <Truck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        Free shipping over $100
-                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Free shipping over $100</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        2 year warranty
-                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">2 year warranty</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <RefreshCw className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        30 day returns
-                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">30 day returns</span>
                     </div>
                   </div>
                 </div>
@@ -291,7 +271,9 @@ export default function ProductView() {
               <h3>Product Description</h3>
               <p>{product.description}</p>
               <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl vel ultricies lacinia, nisl nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl. Sed euismod, nisl vel ultricies lacinia, nisl nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl vel ultricies lacinia, nisl
+                nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl. Sed euismod, nisl vel ultricies lacinia, nisl
+                nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl.
               </p>
               <h3>Features</h3>
               <ul>
@@ -308,9 +290,7 @@ export default function ProductView() {
         {/* Specifications */}
         <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div className="p-6 md:p-8">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-              Product Specifications
-            </h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Product Specifications</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {product.specifications ? (
                 Object.entries(product.specifications).map(([key, value]) => (
@@ -323,11 +303,15 @@ export default function ProductView() {
                 <>
                   <div className="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
                     <span className="text-gray-600 dark:text-gray-400">Brand</span>
-                    <span className="text-gray-900 dark:text-white font-medium">{product.brand || 'Matrix Sports'}</span>
+                    <span className="text-gray-900 dark:text-white font-medium">
+                      {product.brand || "Matrix Sports"}
+                    </span>
                   </div>
                   <div className="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
                     <span className="text-gray-600 dark:text-gray-400">Sport Type</span>
-                    <span className="text-gray-900 dark:text-white font-medium">{product.sport_type || product.category}</span>
+                    <span className="text-gray-900 dark:text-white font-medium">
+                      {product.sport_type || product.category}
+                    </span>
                   </div>
                   <div className="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
                     <span className="text-gray-600 dark:text-gray-400">Material</span>
@@ -353,9 +337,7 @@ export default function ProductView() {
 
         {/* Related Products */}
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Related Products
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Related Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {relatedProducts.map((relatedProduct) => (
               <div
@@ -380,9 +362,7 @@ export default function ProductView() {
                   </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {relatedProduct.title}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{relatedProduct.title}</h3>
                   <div className="flex justify-between items-center">
                     <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
                       ${relatedProduct.price.toFixed(2)}
@@ -401,5 +381,6 @@ export default function ProductView() {
         </div>
       </div>
     </div>
-  );
+  )
 }
+

@@ -32,7 +32,7 @@
 }
 
 .progress-step::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -101,3 +101,4 @@
   background-color: #4f46e5;
   border-radius: 3px;
 }
+

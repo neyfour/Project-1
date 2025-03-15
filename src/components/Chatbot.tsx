@@ -1,63 +1,66 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
+"use client"
+
+import type React from "react"
+import { useState, useRef, useEffect } from "react"
+import { MessageSquare, X, Send, Bot, User } from "lucide-react"
 
 interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'bot';
-  timestamp: Date;
+  id: string
+  text: string
+  sender: "user" | "bot"
+  timestamp: Date
 }
 
 export default function Chatbot() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      text: 'Hello! I\'m Matrix Assistant. How can I help you today?',
-      sender: 'bot',
-      timestamp: new Date()
-    }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+      id: "1",
+      text: "Hello! I'm Matrix Assistant. How can I help you today?",
+      sender: "bot",
+      timestamp: new Date(),
+    },
+  ])
+  const [inputValue, setInputValue] = useState("")
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [messages]);
+  }, [messages])
 
   // Focus input when chat opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+      inputRef.current.focus()
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   const toggleChat = () => {
-    setIsOpen(!isOpen);
-  };
+    setIsOpen(!isOpen)
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-  };
+    setInputValue(e.target.value)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim() === '') return;
+    e.preventDefault()
+    if (inputValue.trim() === "") return
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputValue,
-      sender: 'user',
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+      sender: "user",
+      timestamp: new Date(),
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    setInputValue("")
 
     // Simulate bot response after a short delay
     setTimeout(() => {
@@ -68,21 +71,21 @@ export default function Chatbot() {
         "You can find that in our shop section under the categories tab.",
         "We offer free shipping on orders over $100.",
         "Our return policy allows returns within 30 days of purchase.",
-        "Is there anything else I can help you with?"
-      ];
-      
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
-      
+        "Is there anything else I can help you with?",
+      ]
+
+      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)]
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: randomResponse,
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
-    }, 1000);
-  };
+        sender: "bot",
+        timestamp: new Date(),
+      }
+
+      setMessages((prev) => [...prev, botMessage])
+    }, 1000)
+  }
 
   return (
     <>
@@ -104,7 +107,7 @@ export default function Chatbot() {
               <Bot className="w-5 h-5" />
               <h3 className="font-medium">Matrix Assistant</h3>
             </div>
-            <button 
+            <button
               onClick={toggleChat}
               className="text-white hover:text-gray-200 transition-colors"
               title="Close chat"
@@ -118,26 +121,22 @@ export default function Chatbot() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`mb-4 flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className={`max-w-[80%] rounded-lg p-3 ${
-                  message.sender === 'user' 
-                    ? 'bg-indigo-600 text-white rounded-tr-none' 
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-tl-none'
-                }`}>
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    message.sender === "user"
+                      ? "bg-indigo-600 text-white rounded-tr-none"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-tl-none"
+                  }`}
+                >
                   <div className="flex items-center space-x-2 mb-1">
-                    {message.sender === 'bot' ? (
-                      <Bot className="w-4 h-4" />
-                    ) : (
-                      <User className="w-4 h-4" />
-                    )}
-                    <span className="text-xs opacity-75">
-                      {message.sender === 'bot' ? 'Matrix Assistant' : 'You'}
-                    </span>
+                    {message.sender === "bot" ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                    <span className="text-xs opacity-75">{message.sender === "bot" ? "Matrix Assistant" : "You"}</span>
                   </div>
                   <p>{message.text}</p>
                   <span className="text-xs opacity-75 block text-right mt-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
               </div>
@@ -146,7 +145,10 @@ export default function Chatbot() {
           </div>
 
           {/* Chat Input */}
-          <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 flex items-center">
+          <form
+            onSubmit={handleSubmit}
+            className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 flex items-center"
+          >
             <input
               ref={inputRef}
               type="text"
@@ -166,5 +168,6 @@ export default function Chatbot() {
         </div>
       )}
     </>
-  );
+  )
 }
+

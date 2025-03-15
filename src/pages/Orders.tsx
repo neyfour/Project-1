@@ -1,61 +1,63 @@
-import { useState } from 'react';
-import { Package, Search, Filter, Download, Truck, CheckCircle, AlertCircle, Clock, XCircle } from 'lucide-react';
-import { Order } from '../types';
+"use client"
+
+import { useState } from "react"
+import { Package, Search, Filter, Download, Truck, CheckCircle, Clock, XCircle } from "lucide-react"
+import type { Order } from "../types"
 
 export default function Orders() {
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState("all")
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Sample orders data
   const orders: Order[] = [
     {
-      id: '1',
-      user_id: '1',
-      status: 'processing',
+      id: "1",
+      user_id: "1",
+      status: "processing",
       total: 299.99,
-      created_at: '2024-03-15T10:30:00Z',
+      created_at: "2024-03-15T10:30:00Z",
       shipping_address: {
-        full_name: 'John Doe',
-        street: '123 Sports Ave',
-        city: 'Athletic City',
-        state: 'AC',
-        postal_code: '12345',
-        country: 'United States',
-        phone: '+1234567890'
+        full_name: "John Doe",
+        street: "123 Sports Ave",
+        city: "Athletic City",
+        state: "AC",
+        postal_code: "12345",
+        country: "United States",
+        phone: "+1234567890",
       },
       billing_address: {
-        full_name: 'John Doe',
-        street: '123 Sports Ave',
-        city: 'Athletic City',
-        state: 'AC',
-        postal_code: '12345',
-        country: 'United States',
-        phone: '+1234567890'
+        full_name: "John Doe",
+        street: "123 Sports Ave",
+        city: "Athletic City",
+        state: "AC",
+        postal_code: "12345",
+        country: "United States",
+        phone: "+1234567890",
       },
       items: [
         {
-          product_id: '1',
+          product_id: "1",
           quantity: 2,
           price: 149.99,
-          product_title: 'Premium Soccer Cleats',
-          product_image: 'https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&q=80&w=400',
-          variant_title: 'Size 42 - Black/Red'
-        }
+          product_title: "Premium Soccer Cleats",
+          product_image: "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&q=80&w=400",
+          variant_title: "Size 42 - Black/Red",
+        },
       ],
-      payment_status: 'paid',
-      tracking_number: 'TRK123456789',
-      seller_id: ''
+      payment_status: "paid",
+      tracking_number: "TRK123456789",
+      seller_id: "",
     },
     // Add more sample orders as needed
-  ];
+  ]
 
   const statusColors = {
-    pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
-    processing: { bg: 'bg-blue-100', text: 'text-blue-800', icon: Package },
-    shipped: { bg: 'bg-indigo-100', text: 'text-indigo-800', icon: Truck },
-    delivered: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
-    cancelled: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle }
-  };
+    pending: { bg: "bg-yellow-100", text: "text-yellow-800", icon: Clock },
+    processing: { bg: "bg-blue-100", text: "text-blue-800", icon: Package },
+    shipped: { bg: "bg-indigo-100", text: "text-indigo-800", icon: Truck },
+    delivered: { bg: "bg-green-100", text: "text-green-800", icon: CheckCircle },
+    cancelled: { bg: "bg-red-100", text: "text-red-800", icon: XCircle },
+  }
 
   return (
     <div className="space-y-8">
@@ -64,9 +66,7 @@ export default function Orders() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-            <p className="text-gray-600 mt-1">
-              Manage and track your orders
-            </p>
+            <p className="text-gray-600 mt-1">Manage and track your orders</p>
           </div>
           <div className="flex items-center gap-4">
             <button className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
@@ -135,7 +135,7 @@ export default function Orders() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {orders.map((order) => {
-                const StatusIcon = statusColors[order.status].icon;
+                const StatusIcon = statusColors[order.status].icon
                 return (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -148,49 +148,40 @@ export default function Orders() {
                           />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            #{order.id}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">#{order.id}</div>
+                          <div className="text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {order.shipping_address.full_name}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{order.shipping_address.full_name}</div>
                       <div className="text-sm text-gray-500">
                         {order.shipping_address.city}, {order.shipping_address.country}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status].bg} ${statusColors[order.status].text}`}>
+                      <div
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status].bg} ${statusColors[order.status].text}`}
+                      >
                         <StatusIcon className="w-4 h-4 mr-1" />
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${order.total.toFixed(2)}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.total.toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-4">
-                        View Details
-                      </button>
+                      <button className="text-indigo-600 hover:text-indigo-900 mr-4">View Details</button>
                       {order.tracking_number && (
-                        <button className="text-gray-600 hover:text-gray-900">
-                          Track Order
-                        </button>
+                        <button className="text-gray-600 hover:text-gray-900">Track Order</button>
                       )}
                     </td>
                   </tr>
-                );
+                )
               })}
             </tbody>
           </table>
         </div>
       </div>
     </div>
-  );
+  )
 }
+

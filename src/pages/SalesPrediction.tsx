@@ -1,35 +1,18 @@
-import React, { useState } from 'react';
-import {
-  TrendingUp,
-  Calendar,
-  BarChart3,
-  Target,
-  ArrowUp,
-  ArrowDown,
-  Download,
-  Filter,
-} from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-} from 'recharts';
-import { SalesPrediction, MarketInsight } from '../types';
+"use client"
+
+import { useState } from "react"
+import { TrendingUp, Calendar, BarChart3, Target, ArrowUp, ArrowDown, Download } from "lucide-react"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import type { SalesPrediction, MarketInsight } from "../types"
 
 export default function SalesPredictions() {
-  const [timeRange, setTimeRange] = useState('year');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [timeRange, setTimeRange] = useState("year")
+  const [selectedCategory, setSelectedCategory] = useState("all")
 
   // Sample data for demonstration
   const predictions: SalesPrediction[] = [
     {
-      period: '2024 Q1',
+      period: "2024 Q1",
       actual_revenue: 150000,
       predicted_revenue: 160000,
       confidence_score: 0.92,
@@ -41,7 +24,7 @@ export default function SalesPredictions() {
       },
     },
     {
-      period: '2024 Q2',
+      period: "2024 Q2",
       actual_revenue: 180000,
       predicted_revenue: 185000,
       confidence_score: 0.89,
@@ -53,7 +36,7 @@ export default function SalesPredictions() {
       },
     },
     {
-      period: '2024 Q3',
+      period: "2024 Q3",
       predicted_revenue: 210000,
       confidence_score: 0.85,
       growth_rate: 0.18,
@@ -64,7 +47,7 @@ export default function SalesPredictions() {
       },
     },
     {
-      period: '2024 Q4',
+      period: "2024 Q4",
       predicted_revenue: 250000,
       confidence_score: 0.82,
       growth_rate: 0.22,
@@ -74,16 +57,16 @@ export default function SalesPredictions() {
         competition_index: 0.85,
       },
     },
-  ];
+  ]
 
   const marketInsights: MarketInsight[] = [
     {
-      category: 'Electronics',
+      category: "Electronics",
       market_size: 5000000,
       growth_rate: 0.15,
-      competition_level: 'high',
+      competition_level: "high",
       opportunity_score: 0.75,
-      trending_keywords: ['wireless', 'smart home', '5G'],
+      trending_keywords: ["wireless", "smart home", "5G"],
       price_range: {
         min: 99,
         max: 999,
@@ -91,19 +74,19 @@ export default function SalesPredictions() {
       },
     },
     {
-      category: 'Fashion',
+      category: "Fashion",
       market_size: 3000000,
       growth_rate: 0.12,
-      competition_level: 'medium',
+      competition_level: "medium",
       opportunity_score: 0.82,
-      trending_keywords: ['sustainable', 'vintage', 'minimalist'],
+      trending_keywords: ["sustainable", "vintage", "minimalist"],
       price_range: {
         min: 29,
         max: 299,
         optimal: 89,
       },
     },
-  ];
+  ]
 
   return (
     <div className="space-y-8">
@@ -112,9 +95,7 @@ export default function SalesPredictions() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Sales Predictions</h1>
-            <p className="text-gray-600 mt-1">
-              AI-powered sales forecasting and market insights
-            </p>
+            <p className="text-gray-600 mt-1">AI-powered sales forecasting and market insights</p>
           </div>
           <div className="flex items-center gap-4">
             <button className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
@@ -210,21 +191,19 @@ export default function SalesPredictions() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Revenue Forecast</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Predicted vs actual revenue with confidence intervals
-            </p>
+            <p className="text-sm text-gray-600 mt-1">Predicted vs actual revenue with confidence intervals</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={400}>
           <AreaChart data={predictions}>
             <defs>
               <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6366F1" stopOpacity={0.1}/>
-                <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#6366F1" stopOpacity={0.1} />
+                <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
-                <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#10B981" stopOpacity={0.1} />
+                <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -257,41 +236,37 @@ export default function SalesPredictions() {
           <div key={insight.category} className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">{insight.category} Market Insights</h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium
                 ${
-                  insight.competition_level === 'high' ? 'bg-red-100 text-red-800' :
-                  insight.competition_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-green-100 text-green-800'
+                  insight.competition_level === "high"
+                    ? "bg-red-100 text-red-800"
+                    : insight.competition_level === "medium"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-green-100 text-green-800"
                 }
-              `}>
+              `}
+              >
                 {insight.competition_level.charAt(0).toUpperCase() + insight.competition_level.slice(1)} Competition
               </span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <p className="text-sm text-gray-600">Market Size</p>
-                <p className="text-xl font-bold text-gray-900">
-                  ${(insight.market_size / 1000000).toFixed(1)}M
-                </p>
+                <p className="text-xl font-bold text-gray-900">${(insight.market_size / 1000000).toFixed(1)}M</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Growth Rate</p>
-                <p className="text-xl font-bold text-green-600">
-                  +{(insight.growth_rate * 100).toFixed(1)}%
-                </p>
+                <p className="text-xl font-bold text-green-600">+{(insight.growth_rate * 100).toFixed(1)}%</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Opportunity Score</p>
-                <p className="text-xl font-bold text-indigo-600">
-                  {(insight.opportunity_score * 100).toFixed(0)}%
-                </p>
+                <p className="text-xl font-bold text-indigo-600">{(insight.opportunity_score * 100).toFixed(0)}%</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Optimal Price</p>
-                <p className="text-xl font-bold text-gray-900">
-                  ${insight.price_range.optimal}
-                </p>
+                <p className="text-xl font-bold text-gray-900">${insight.price_range.optimal}</p>
               </div>
             </div>
 
@@ -299,10 +274,7 @@ export default function SalesPredictions() {
               <p className="text-sm font-medium text-gray-700 mb-2">Trending Keywords</p>
               <div className="flex flex-wrap gap-2">
                 {insight.trending_keywords.map((keyword) => (
-                  <span
-                    key={keyword}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                  >
+                  <span key={keyword} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                     {keyword}
                   </span>
                 ))}
@@ -312,5 +284,6 @@ export default function SalesPredictions() {
         ))}
       </div>
     </div>
-  );
+  )
 }
+
