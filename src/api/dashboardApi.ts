@@ -1,4 +1,3 @@
-// src/api/dashboardApi.ts
 import { api } from "../config/db"
 import type { SalesPrediction, Product, Order } from "../types"
 
@@ -30,9 +29,10 @@ interface StatisticsResponse {
   }>
 }
 
-export const getDashboardOverview = async (token: string): Promise<DashboardOverview> => {
+// Add this function to fetch dashboard overview data
+export const getDashboardOverview = async (token: string): Promise<any> => {
   try {
-    const response = await fetch(`${api.url}/dashboard/overview`, {
+    const response = await fetch(`${api.url}/statistics/dashboard`, {
       headers: api.getHeaders(token),
     })
 
@@ -43,7 +43,40 @@ export const getDashboardOverview = async (token: string): Promise<DashboardOver
     return await response.json()
   } catch (error) {
     console.error("Error fetching dashboard overview:", error)
-    throw error
+
+    // Return mock data as fallback
+    return {
+      product_count: 0,
+      orders: {
+        today: 0,
+        yesterday: 0,
+        this_month: 0,
+        last_month: 0,
+        total: 0,
+        change: {
+          daily: 0,
+          monthly: 0,
+        },
+      },
+      revenue: {
+        today: 0,
+        yesterday: 0,
+        this_month: 0,
+        last_month: 0,
+        total: 0,
+        change: {
+          daily: 0,
+          monthly: 0,
+        },
+      },
+      monthly_data: [],
+      top_products: [],
+      platform_stats: {
+        customer_count: 0,
+        seller_count: 0,
+        pending_applications: 0,
+      },
+    }
   }
 }
 

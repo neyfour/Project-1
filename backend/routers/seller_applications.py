@@ -9,7 +9,7 @@ from pymongo import MongoClient
 from .users import get_current_active_user
 
 # Connect to MongoDB
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://amine:amine200%40@cluster-0.iiu2z.mongodb.net/ecommerce_db?retryWrites=true&w=majority")
 client = MongoClient(MONGO_URI)
 db = client["ecommerce_db"]
 
@@ -70,6 +70,65 @@ async def get_seller_applications(
     applications = list(db.seller_applications.aggregate(pipeline))
     return applications
 
+@router.post("/", response_model=Dict[str, Any])
+async def create_seller_application(
+    application_data: Dict[str, Any],
+    current_user: dict = Depends(get_current_active_user)
+):
+    # Check if user already has a pending application
+    existing_application = db.seller_applications.find_one({
+        "user_id": ObjectId(current_user["_id"]),
+        "status": "pending"
+    })
+    
+    if existing_application:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You already have a pending application"
+        )
+    
+    # Create new application
+    application = {
+        "user_id": ObjectId(current_user["_id"]),
+        "business_name": application_data.get("business_name"),
+        "business_type": application_data.get("business_type"),
+        "category": application_data.get("category"),
+        "description": application_data.get("description"),
+        "address": application_data.get("address"),
+        "phone": application_data.get("phone"),
+        "tax_id": application_data.get("tax_id"),
+        "status": "pending",
+        "submitted_at": datetime.utcnow()
+    }
+    
+    # Log the application data for debugging
+    print(f"Creating seller application: {application}")
+    
+    result = db.seller_applications.insert_one(application)
+    application_id = str(result.inserted_id)
+    
+    # Create notification for superadmin
+    notification = {
+        "user_id": None,  # For superadmin
+        "type": "seller_application",
+        "title": "New Seller Application",
+        "message": f"User {current_user['username']} has applied to become a seller",
+        "read": False,
+        "created_at": datetime.utcnow(),
+        "data": {
+            "application_id": application_id,
+            "user_id": str(current_user["_id"])
+        }
+    }
+    
+    db.notifications.insert_one(notification)
+    
+    # Return created application
+    application["_id"] = application_id
+    application["user_id"] = str(application["user_id"])
+    
+    return application
+
 @router.get("/my-application", response_model=Dict[str, Any])
 async def get_my_application(current_user: dict = Depends(get_current_active_user)):
     # Find user's application
@@ -127,65 +186,67 @@ async def get_application_by_id(
 
 @router.put("/{application_id}/status")
 async def update_application_status(
-    application_id: str,
-    status_data: Dict[str, str],
-    current_user: dict = Depends(get_current_active_user)
+  application_id: str,
+  status_data: Dict[str, str],
+  current_user: dict = Depends(get_current_active_user)
 ):
-    # Only admin and superadmin can update application status
-    if current_user["role"] not in ["admin", "superadmin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update application status"
-        )
-    
-    new_status = status_data.get("status")
-    if new_status not in ["approved", "rejected", "pending"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid status"
-        )
-    
-    # Get application
-    application = db.seller_applications.find_one({"_id": ObjectId(application_id)})
-    if not application:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Application not found"
-        )
-    
-    # Update application status
-    db.seller_applications.update_one(
-        {"_id": ObjectId(application_id)},
-        {
-            "$set": {
-                "status": new_status,
-                "updated_at": datetime.utcnow()
-            }
-        }
-    )
-    
-    # If approved, update user role to seller
-    if new_status == "approved":
-        db.users.update_one(
-            {"_id": ObjectId(application["user_id"])},
-            {"$set": {"role": "seller"}}
-        )
-    
-    # Create notification for the user
-    notification = {
-        "user_id": application["user_id"],
-        "type": "application_status",
-        "title": "Seller Application Update",
-        "message": f"Your seller application has been {new_status}",
-        "read": False,
-        "created_at": datetime.utcnow(),
-        "data": {
-            "application_id": application_id,
-            "status": new_status
-        }
-    }
-    
-    db.notifications.insert_one(notification)
-    
-    return {"message": f"Application status updated to {new_status}"}
+  # Only admin and superadmin can update application status
+  if current_user["role"] not in ["admin", "superadmin"]:
+      raise HTTPException(
+          status_code=status.HTTP_403_FORBIDDEN,
+          detail="Not authorized to update application status"
+      )
+  
+  new_status = status_data.get("status")
+  if new_status not in ["approved", "rejected", "pending"]:
+      raise HTTPException(
+          status_code=status.HTTP_400_BAD_REQUEST,
+          detail="Invalid status"
+      )
+  
+  # Get application
+  application = db.seller_applications.find_one({"_id": ObjectId(application_id)})
+  if not application:
+      raise HTTPException(
+          status_code=status.HTTP_404_NOT_FOUND,
+          detail="Application not found"
+      )
+  
+  # Update application status
+  db.seller_applications.update_one(
+      {"_id": ObjectId(application_id)},
+      {
+          "$set": {
+              "status": new_status,
+              "updated_at": datetime.utcnow(),
+              "updated_by": current_user["_id"],
+              "reason": status_data.get("reason", "")
+          }
+      }
+  )
+  
+  # If approved, update user role to seller
+  if new_status == "approved":
+      db.users.update_one(
+          {"_id": ObjectId(application["user_id"])},
+          {"$set": {"role": "seller"}}
+      )
+  
+  # Create notification for the user
+  notification = {
+      "user_id": application["user_id"],
+      "type": "application_status",
+      "title": "Seller Application Update",
+      "message": f"Your seller application has been {new_status}",
+      "read": False,
+      "created_at": datetime.utcnow(),
+      "data": {
+          "application_id": application_id,
+          "status": new_status
+      }
+  }
+  
+  db.notifications.insert_one(notification)
+  
+  return {"message": f"Application status updated to {new_status}"}
 

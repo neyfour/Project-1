@@ -38,7 +38,11 @@ import TrackOrder from "./pages/TrackOrder"
 import Wishlist from "./pages/Wishlist"
 import ViewDetails from "./pages/ViewDetails"
 import Payment from "./pages/Payment"
+import Auth from "./pages/Auth"
+import SellersList from "./pages/SellersList"
+import AdminChat from "./pages/AdminChat"
 import type { JSX } from "react/jsx-runtime"
+import SellerApplicationsList from "./pages/SellerApplicationsList"
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole?: string | string[] }) => {
@@ -50,7 +54,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; req
   }, [checkAuth])
 
   if (!user) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/auth" replace />
   }
 
   if (requiredRole) {
@@ -88,24 +92,35 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* SuperAdmin/Admin Dashboard Routes */}
+        {/* Auth Route */}
+        <Route path="/auth" element={<Auth />} />
+
+        {/* SuperAdmin Dashboard Routes */}
         <Route
-          path="/matrix/*"
+          path="/matrix/admin/*"
           element={
             <DashboardLayout>
               <Routes>
                 <Route
                   path="/"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <SuperAdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sellers"
+                  element={
+                    <ProtectedRoute requiredRole="superadmin">
+                      <SellersList />
                     </ProtectedRoute>
                   }
                 />
                 <Route
                   path="/products"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <ProductsPage />
                     </ProtectedRoute>
                   }
@@ -113,7 +128,7 @@ function App() {
                 <Route
                   path="/orders"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <OrdersPage />
                     </ProtectedRoute>
                   }
@@ -121,7 +136,7 @@ function App() {
                 <Route
                   path="/predictions"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <PredictionsPage />
                     </ProtectedRoute>
                   }
@@ -129,7 +144,7 @@ function App() {
                 <Route
                   path="/statistics"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <StatisticsPage />
                     </ProtectedRoute>
                   }
@@ -137,7 +152,7 @@ function App() {
                 <Route
                   path="/products/add"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <AddProduct />
                     </ProtectedRoute>
                   }
@@ -145,7 +160,7 @@ function App() {
                 <Route
                   path="/products/:productId/analytics"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <ProductAnalytics />
                     </ProtectedRoute>
                   }
@@ -153,16 +168,24 @@ function App() {
                 <Route
                   path="/orders/:orderId"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
+                    <ProtectedRoute requiredRole="superadmin">
                       <ViewDetails />
                     </ProtectedRoute>
                   }
                 />
                 <Route
-                  path="/forum"
+                  path="/chat"
                   element={
-                    <ProtectedRoute requiredRole={["admin", "superadmin"]}>
-                      <SellerForum />
+                    <ProtectedRoute requiredRole="superadmin">
+                      <AdminChat />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/seller-applications"
+                  element={
+                    <ProtectedRoute requiredRole="superadmin">
+                      <SellerApplicationsList />
                     </ProtectedRoute>
                   }
                 />

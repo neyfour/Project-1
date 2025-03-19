@@ -45,8 +45,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         toast.success("Login successful!")
 
         // Redirect admin users to dashboard
-        if (user.role === "admin" || user.role === "seller") {
-          navigate("/matrix")
+        if (user.role === "superadmin" ) {
+          navigate("/matrix/admin")
+        }
+        else if (user.role === "seller") {
+          navigate("/seller/dashboard")
         }
 
         onClose()

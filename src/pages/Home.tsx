@@ -1,19 +1,48 @@
 "use client"
+import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useStore } from "../store"
-import { Star, ShoppingCart, TrendingUp, ArrowRight, ChevronRight, ShoppingBag, Award, Users } from "lucide-react"
+import { TrendingUp, ArrowRight, ChevronRight, ShoppingBag, Award, Users } from "lucide-react"
 import LazyImage from "../components/LazyImage"
+import ProductPreviewModal from "../components/ProductPreviewModal"
+import ProductCard from "../components/ProductCard"
+import { getProducts } from "../api/productApi"
 import "../styles/Home.css"
-import { toast } from "react-toastify"
 
 export default function Home() {
   const navigate = useNavigate()
-  const products = useStore((state) => state.products)
-  const user = useStore((state) => state.user)
+  const { user } = useStore()
 
-  // Sample data for demonstration
-  const featuredProducts = products.filter((product) => product.rating >= 4.5).slice(0, 6)
-  const popularProducts = products.sort((a, b) => b.views_count - a.views_count).slice(0, 4)
+  const [featuredProducts, setFeaturedProducts] = useState([])
+  const [popularProducts, setPopularProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [previewProduct, setPreviewProduct] = useState(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    setLoading(true)
+    try {
+      // Fetch all products
+      const products = await getProducts()
+
+      // Sort by rating for featured products (highest rated)
+      const featured = [...products].sort((a, b) => b.rating - a.rating).slice(0, 6)
+
+      // Sort by views for popular products
+      const popular = [...products].sort((a, b) => b.views_count - a.views_count).slice(0, 4)
+
+      setFeaturedProducts(featured)
+      setPopularProducts(popular)
+    } catch (error) {
+      console.error("Error fetching products:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const categories = [
     {
@@ -50,13 +79,22 @@ export default function Home() {
         navigate("/matrix")
       } else if (user.seller_application) {
         // If they've already applied
-        toast.info("Your seller application is being reviewed")
+        alert("Your seller application is being reviewed")
       } else {
         navigate("/become-seller")
       }
     } else {
       navigate("/auth")
     }
+  }
+
+  const openProductPreview = (product) => {
+    if (!product) {
+      console.error("Cannot preview undefined product")
+      return
+    }
+    setPreviewProduct(product)
+    setIsPreviewOpen(true)
   }
 
   return (
@@ -106,49 +144,18 @@ export default function Home() {
               <ChevronRight className="w-5 h-5 ml-1" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {popularProducts.map((product) => (
-              <div
-                key={product.id}
-                className="product-card bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300"
-              >
-                <div className="relative h-64">
-                  <LazyImage src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
-                  <div className="absolute top-3 right-3">
-                    <span className="px-2 py-1 bg-indigo-600 text-white text-xs font-medium rounded-full">Popular</span>
-                  </div>
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <Link
-                        to={`/products/${product.id}`}
-                        className="block w-full bg-white text-gray-900 py-2 rounded-lg font-semibold text-center hover:bg-gray-100 transition-colors"
-                      >
-                        View Details
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{product.title}</h3>
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="ml-1 text-gray-600 dark:text-gray-400">{product.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{product.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                      ${product.price.toFixed(2)}
-                    </span>
-                    <button className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors">
-                      <ShoppingCart className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin h-12 w-12 border-4 border-indigo-600 rounded-full border-t-transparent"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {popularProducts.map((product) => (
+                <ProductCard key={product.id} product={product} popular onQuickView={openProductPreview} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -203,47 +210,18 @@ export default function Home() {
               <ChevronRight className="w-5 h-5 ml-1" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.slice(0, 3).map((product) => (
-              <div
-                key={product.id}
-                className="product-card bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-              >
-                <div className="relative h-64">
-                  <LazyImage src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
-                  <div className="absolute top-3 right-3">
-                    <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded-full">
-                      Featured
-                    </span>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{product.title}</h3>
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg -indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm font-medium capitalize">
-                      {product.category}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">{product.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                      ${product.price.toFixed(2)}
-                    </span>
-                    <div className="flex items-center">
-                      <Star className="w-5 h-5 text-yellow-400" />
-                      <span className="ml-1 text-gray-600 dark:text-gray-400">{product.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                  <Link
-                    to={`/products/${product.id}`}
-                    className="mt-4 block w-full py-2 bg-indigo-600 text-white rounded-lg font-medium text-center hover:bg-indigo-700 transition-colors"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin h-12 w-12 border-4 border-indigo-600 rounded-full border-t-transparent"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredProducts.slice(0, 3).map((product) => (
+                <ProductCard key={product.id} product={product} featured onQuickView={openProductPreview} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -311,6 +289,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Product Preview Modal */}
+      {previewProduct && (
+        <ProductPreviewModal product={previewProduct} isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} />
+      )}
     </div>
   )
 }

@@ -9,7 +9,7 @@ from pymongo import MongoClient
 from .users import get_current_active_user
 
 # Connect to MongoDB
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://amine:amine200%40@cluster-0.iiu2z.mongodb.net/ecommerce_db?retryWrites=true&w=majority")
 client = MongoClient(MONGO_URI)
 db = client["ecommerce_db"]
 
@@ -23,13 +23,13 @@ async def get_notifications(
     limit: int = 50
 ):
     # Build query
-    query = {"user_id": current_user["_id"]}
+    query = {"user_id": str(current_user["_id"])}
     
     # For superadmin, also get notifications with user_id = None
     if current_user["role"] == "superadmin":
         query = {
             "$or": [
-                {"user_id": current_user["_id"]},
+                {"user_id": str(current_user["_id"])},
                 {"user_id": None}
             ]
         }

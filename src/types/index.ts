@@ -53,6 +53,8 @@ export interface ProductVariant {
   stock: number
   sku: string
   attributes: Record<string, string>
+  color?: string
+  size?: string
 }
 
 export interface Review {
@@ -191,5 +193,32 @@ export interface ChatRoom {
   participants: string[]
   last_message?: ChatMessage
   created_at: string
+}
+
+// Add these types at the end of the file
+
+export interface CartItem {
+  id: string
+  title: string
+  price: number
+  image_url: string
+  quantity: number
+  stock: number
+  user_id: string
+  variant?: {
+    id: string
+    title: string
+    color?: string
+    size?: string
+  }
+}
+
+export interface WishlistItem {
+  id: string
+  title: string
+  price: number
+  image_url: string
+  stock: number
+  user_id: string
 }
 

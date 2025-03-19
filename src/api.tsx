@@ -1,4 +1,5 @@
-// src/config/db.ts
+// src/api.tsx
+
 const API_URL = import.meta.env.REACT_APP_API_URL || "http://localhost:8000"
 
 export const api = {
@@ -15,6 +16,4 @@ export const api = {
     return headers
   },
 }
-
-export default api
 

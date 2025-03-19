@@ -12,12 +12,13 @@ export default function BecomeSeller() {
   const [step, setStep] = useState(1)
   const user = useStore((state) => state.user)
   const applyForSeller = useStore((state) => state.applyForSeller)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
 
   const [formData, setFormData] = useState({
     businessName: "",
     businessType: "",
     category: "",
-    website: "",
     phone: "",
     address: "",
     taxId: "",
@@ -35,11 +36,30 @@ export default function BecomeSeller() {
     }))
   }
 
+  const handleContinue = () => {
+    // Validate current step before proceeding
+    if (step === 1) {
+      if (!formData.businessName || !formData.businessType || !formData.category) {
+        toast.error("Please fill in all required fields")
+        return
+      }
+    } else if (step === 2) {
+      if (!formData.phone || !formData.address || !formData.taxId) {
+        toast.error("Please fill in all required fields")
+        return
+      }
+    }
+
+    // Proceed to next step
+    setStep(step + 1)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // If not on the final step, just continue to next step
     if (step < 3) {
-      setStep(step + 1)
+      handleContinue()
       return
     }
 
@@ -49,29 +69,55 @@ export default function BecomeSeller() {
       return
     }
 
+    if (!formData.description) {
+      toast.error("Please provide a business description")
+      return
+    }
+
     if (!user) {
       navigate("/auth")
       return
     }
 
+    setSubmitting(true)
+    setError("")
+
     try {
-      // Submit seller application
-      await applyForSeller({
+      // Submit seller application with proper formatting
+      const applicationData = {
         business_name: formData.businessName,
         business_type: formData.businessType,
         category: formData.category,
-        website: formData.website,
         phone: formData.phone,
         address: formData.address,
         tax_id: formData.taxId,
         description: formData.description,
-      })
+        user_id: user.id,
+      }
 
-      toast.success("Your seller application has been submitted for review")
+      console.log("Submitting application data:", applicationData)
+
+      // Get token from store
+      const token = useStore.getState().token
+      if (!token) {
+        setError("You must be logged in to apply")
+        setSubmitting(false)
+        return
+      }
+
+      // Submit application
+      await applyForSeller(applicationData)
+
+      toast.success(
+        "Your seller application has been submitted for review! You'll receive a notification when it's processed.",
+      )
       navigate("/")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting seller application:", error)
-      toast.error("Failed to submit application. Please try again.")
+      setError(error.message || "Failed to submit application. Please try again.")
+      toast.error(error.message || "Failed to submit application. Please try again.")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -81,7 +127,9 @@ export default function BecomeSeller() {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Business Name <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 name="businessName"
@@ -93,7 +141,9 @@ export default function BecomeSeller() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Business Type <span className="text-red-500">*</span>
+              </label>
               <select
                 name="businessType"
                 value={formData.businessType}
@@ -111,7 +161,7 @@ export default function BecomeSeller() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Primary Product Category
+                Primary Product Category <span className="text-red-500">*</span>
               </label>
               <select
                 name="category"
@@ -139,20 +189,8 @@ export default function BecomeSeller() {
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Business Website (Optional)
+                Business Phone <span className="text-red-500">*</span>
               </label>
-              <input
-                type="url"
-                name="website"
-                value={formData.website}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder="https://example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Phone</label>
               <input
                 type="tel"
                 name="phone"
@@ -165,7 +203,7 @@ export default function BecomeSeller() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Business Address
+                Business Address <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -179,7 +217,7 @@ export default function BecomeSeller() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tax ID / Business Registration Number
+                Tax ID / Business Registration Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -198,7 +236,7 @@ export default function BecomeSeller() {
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Business Description
+                Business Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="description"
@@ -240,6 +278,12 @@ export default function BecomeSeller() {
                 products and manage your store.
               </p>
             </div>
+
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg text-red-600 dark:text-red-400 text-sm">
+                {error}
+              </div>
+            )}
           </div>
         )
 
@@ -271,6 +315,7 @@ export default function BecomeSeller() {
               <div className="border-b border-gray-200 dark:border-gray-700">
                 <div className="flex">
                   <button
+                    type="button"
                     className={`flex-1 py-4 px-6 text-center border-b-2 ${
                       step >= 1
                         ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
@@ -284,12 +329,13 @@ export default function BecomeSeller() {
                     Business Info
                   </button>
                   <button
+                    type="button"
                     className={`flex-1 py-4 px-6 text-center border-b-2 ${
                       step >= 2
                         ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                         : "border-transparent text-gray-500"
                     }`}
-                    onClick={() => step > 2 && setStep(2)}
+                    onClick={() => step > 1 && setStep(2)}
                   >
                     <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 mr-2">
                       2
@@ -297,11 +343,13 @@ export default function BecomeSeller() {
                     Contact Details
                   </button>
                   <button
+                    type="button"
                     className={`flex-1 py-4 px-6 text-center border-b-2 ${
                       step >= 3
                         ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                         : "border-transparent text-gray-500"
                     }`}
+                    onClick={() => step > 2 && setStep(3)}
                   >
                     <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 mr-2">
                       3
@@ -319,18 +367,31 @@ export default function BecomeSeller() {
                   <button
                     type="button"
                     onClick={() => setStep(step - 1)}
+                    disabled={step === 1 || submitting}
                     className={`px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                       step === 1 ? "invisible" : ""
-                    }`}
+                    } ${submitting ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     Back
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+                    disabled={submitting}
+                    className={`px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center ${
+                      submitting ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    {step === 3 ? "Submit Application" : "Continue"}
-                    <ArrowRight className="ml-2 w-4 h-4" />
+                    {submitting ? (
+                      <>
+                        <span className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></span>
+                        Processing...
+                      </>
+                    ) : step === 3 ? (
+                      <>Submit Application</>
+                    ) : (
+                      <>Continue</>
+                    )}
+                    {!submitting && <ArrowRight className="ml-2 w-4 h-4" />}
                   </button>
                 </div>
               </form>

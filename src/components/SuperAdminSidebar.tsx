@@ -1,155 +1,161 @@
 "use client"
 
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
-  ShoppingBag,
-  PackageCheck,
-  BarChart3,
-  PieChart,
   Users,
-  MessageSquare,
+  Package,
+  BarChart3,
+  Settings,
   LogOut,
-  Store,
+  Bell,
+  ShoppingBag,
+  TrendingUp,
+  UserCheck,
 } from "lucide-react"
 import { useStore } from "../store"
-import { logoutUser } from "../api/authApi"
 
-interface SuperAdminSidebarProps {
-  isOpen: boolean
-  setIsOpen: (isOpen: boolean) => void
-}
-
-export default function SuperAdminSidebar({ isOpen, setIsOpen }: SuperAdminSidebarProps) {
+export default function SuperAdminSidebar() {
   const location = useLocation()
-  const navigate = useNavigate()
-  const setUser = useStore((state) => state.setUser)
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      icon: LayoutDashboard,
-      path: "/admin/dashboard",
-    },
-    {
-      title: "Sellers",
-      icon: Users,
-      path: "/admin/sellers",
-    },
-    {
-      title: "Products",
-      icon: ShoppingBag,
-      path: "/admin/products",
-    },
-    {
-      title: "Orders",
-      icon: PackageCheck,
-      path: "/admin/orders",
-    },
-    {
-      title: "Predictions",
-      icon: BarChart3,
-      path: "/admin/predictions",
-    },
-    {
-      title: "Statistics",
-      icon: PieChart,
-      path: "/admin/statistics",
-    },
-    {
-      title: "Forum",
-      icon: MessageSquare,
-      path: "/admin/forum",
-    },
-  ]
+  const logout = useStore((state) => state.logout)
 
   const isActive = (path: string) => {
-    return location.pathname === path
-  }
-
-  const handleLogout = async () => {
-    try {
-      await logoutUser()
-      setUser(null)
-      navigate("/")
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
+    return location.pathname === path || location.pathname.startsWith(path + "/")
   }
 
   return (
-    <>
-      {/* Mobile backdrop */}
-      {isOpen && (
-        <div className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden" onClick={() => setIsOpen(false)}></div>
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out md:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          <Link to="/admin/dashboard" className="flex items-center space-x-2">
-            <Store className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</span>
-          </Link>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700 md:hidden"
-          >
-            <span className="sr-only">Close sidebar</span>
-            <svg
-              className="h-6 w-6"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="mt-5 px-2 space-y-1">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`group flex items-center px-4 py-3 text-sm font-medium rounded-md ${
-                isActive(item.path)
-                  ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              <item.icon
-                className={`mr-3 h-5 w-5 ${
-                  isActive(item.path)
-                    ? "text-indigo-600 dark:text-indigo-400"
-                    : "text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"
-                }`}
-              />
-              {item.title}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Logout button */}
-        <div className="absolute bottom-0 w-full border-t border-gray-200 dark:border-gray-700 p-4">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-md"
-          >
-            <LogOut className="mr-3 h-5 w-5" />
-            Logout
-          </button>
-        </div>
+    <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 hidden md:flex flex-col">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+        <Link to="/matrix/admin" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+            <span className="text-white font-semibold">A</span>
+          </div>
+          <span className="text-xl font-bold text-gray-900 dark:text-white">Admin Portal</span>
+        </Link>
       </div>
-    </>
+
+      <div className="flex-1 overflow-y-auto py-6 px-4">
+        <nav className="space-y-1">
+          <Link
+            to="/matrix/admin"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin") && !isActive("/matrix/admin/sellers") && !isActive("/matrix/admin/products")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span>Dashboard</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/seller-applications"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/seller-applications")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <UserCheck className="w-5 h-5" />
+            <span>Seller Applications</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/sellers"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/sellers")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            <span>Sellers</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/products"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/products")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            <span>Products</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/orders"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/orders")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <ShoppingBag className="w-5 h-5" />
+            <span>Orders</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/statistics"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/statistics")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span>Statistics</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/predictions"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/predictions")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <TrendingUp className="w-5 h-5" />
+            <span>Predictions</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/chat"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/chat")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <Bell className="w-5 h-5" />
+            <span>Seller Chat</span>
+          </Link>
+
+          <Link
+            to="/matrix/admin/settings"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive("/matrix/admin/settings")
+                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            <span>Settings</span>
+          </Link>
+        </nav>
+      </div>
+
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+        <button
+          onClick={logout}
+          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
   )
 }
 

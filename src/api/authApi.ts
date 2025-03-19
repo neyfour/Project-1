@@ -21,12 +21,12 @@ interface LoginResponse {
 
 export const registerUser = async (username: string, email: string, password: string): Promise<User> => {
   try {
-    const response = await fetch(`${api.url}/register`, {
+    const response = await fetch(`${api.url}/users/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ full_name: username, email, password }),
+      body: JSON.stringify({ username, email, password }),
     })
 
     if (!response.ok) {
@@ -34,7 +34,14 @@ export const registerUser = async (username: string, email: string, password: st
       throw new Error(errorData.detail || "Registration failed")
     }
 
-    return await response.json()
+    const data = await response.json()
+
+    // Store token in localStorage for future requests
+    if (data.access_token) {
+      localStorage.setItem("auth_token", data.access_token)
+    }
+
+    return data.user
   } catch (error) {
     console.error("Registration error:", error)
     throw error
@@ -49,86 +56,58 @@ export const loginUser = async (email: string, password: string): Promise<User> 
     formData.append("password", password)
 
     // Try to make login request to the backend
-    try {
-      const response = await fetch(`${api.url}/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formData,
-      })
+    const response = await fetch(`${api.url}/users/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData,
+    })
 
-      if (response.ok) {
-        const data: LoginResponse = await response.json()
+    if (response.ok) {
+      const data: LoginResponse = await response.json()
 
-        // If the API returns the user directly with the token, use it
-        if (data.user) {
-          // Store token in localStorage for future requests
-          localStorage.setItem("auth_token", data.access_token)
-          return data.user
-        }
-
-        // Otherwise, get user profile with the token
-        const userResponse = await fetch(`${api.url}/users/me`, {
-          headers: api.getHeaders(data.access_token),
-        })
-
-        if (userResponse.ok) {
-          // Store token in localStorage for future requests
-          localStorage.setItem("auth_token", data.access_token)
-          return await userResponse.json()
-        }
-      }
-
-      // If we get here, the API call failed but didn't throw an error
-      throw new Error("Login failed")
-    } catch (error) {
-      console.log("Backend login failed, using mock login:", error)
-      // If backend login fails, use mock login
-      return mockLogin(email, password)
+      // Store token in localStorage for future requests
+      localStorage.setItem("auth_token", data.access_token)
+      return data.user
     }
+
+    // If we get here, the API call failed but didn't throw an error
+    throw new Error("Login failed")
   } catch (error) {
     console.error("Login error:", error)
     throw error
   }
 }
 
-// Update the mockLogin function to support all roles
-const mockLogin = (email: string, password: string): User => {
-  // Simple validation
-  if (!email || !password) {
-    throw new Error("Email and password are required")
+// Google login
+export const googleLogin = async (token: string): Promise<User> => {
+  try {
+    const response = await fetch(`${api.url}/users/google-login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || "Google login failed")
+    }
+
+    const data = await response.json()
+
+    // Store token in localStorage for future requests
+    if (data.access_token) {
+      localStorage.setItem("auth_token", data.access_token)
+    }
+
+    return data.user
+  } catch (error) {
+    console.error("Google login error:", error)
+    throw error
   }
-
-  if (password.length < 6) {
-    throw new Error("Password must be at least 6 characters")
-  }
-
-  // Create a mock user based on the email
-  let role: "buyer" | "seller" | "admin" | "superadmin" = "buyer"
-
-  // Special handling for different account types
-  if (email === "superadmin@example.com") {
-    role = "superadmin"
-  } else if (email === "admin@example.com") {
-    role = "admin"
-  } else if (email.includes("seller")) {
-    role = "seller"
-  }
-
-  const mockUser: User = {
-    id: `user_${Math.random().toString(36).substr(2, 9)}`,
-    email: email,
-    username: email.split("@")[0],
-    role: role,
-    created_at: new Date().toISOString(),
-    avatar_url: `https://ui-avatars.com/api/?name=${email.split("@")[0]}&background=random`,
-  }
-
-  // Store mock token
-  localStorage.setItem("auth_token", `mock_token_${mockUser.id}`)
-
-  return mockUser
 }
 
 export const logoutUser = () => {
@@ -163,20 +142,30 @@ export const checkAuthStatus = async (): Promise<User | null> => {
 }
 
 // Add a function to apply for seller status
-export const applyForSeller = async (applicationData: any, token: string): Promise<User> => {
+export const applyForSeller = async (applicationData: any, token: string): Promise<any> => {
   try {
-    const response = await fetch(`${api.url}/users/apply-seller`, {
+    if (!token) {
+      throw new Error("Authentication required")
+    }
+
+    console.log("Sending seller application data:", applicationData)
+
+    const response = await fetch(`${api.url}/seller-applications`, {
       method: "POST",
       headers: api.getHeaders(token),
       body: JSON.stringify(applicationData),
+      credentials: "include",
     })
 
     if (!response.ok) {
       const errorData = await response.json()
+      console.error("Server error response:", errorData)
       throw new Error(errorData.detail || "Application failed")
     }
 
-    return await response.json()
+    const result = await response.json()
+    console.log("Server response for seller application:", result)
+    return result
   } catch (error) {
     console.error("Seller application error:", error)
     throw error
@@ -185,15 +174,30 @@ export const applyForSeller = async (applicationData: any, token: string): Promi
 
 // Add a function for superadmin to approve/reject seller applications
 export const updateSellerStatus = async (
-  userId: string,
+  applicationId: string,
   status: "approved" | "rejected",
+  reason = "",
   token: string,
-): Promise<User> => {
+): Promise<any> => {
   try {
-    const response = await fetch(`${api.url}/admin/seller-applications/${userId}`, {
+    if (!applicationId) {
+      throw new Error("Application ID is required")
+    }
+
+    console.log(`Updating application ${applicationId} status to ${status}`)
+
+    // Use the correct endpoint format
+    const endpoint = `/seller-applications/${applicationId}/status`
+    const body = JSON.stringify({
+      status: status,
+      reason: status === "rejected" ? reason : "",
+    })
+
+    const response = await fetch(`${api.url}${endpoint}`, {
       method: "PUT",
       headers: api.getHeaders(token),
-      body: JSON.stringify({ status }),
+      body: body,
+      credentials: "include",
     })
 
     if (!response.ok) {
@@ -204,6 +208,118 @@ export const updateSellerStatus = async (
     return await response.json()
   } catch (error) {
     console.error("Update seller status error:", error)
+    throw error
+  }
+}
+
+// Get seller applications
+export const getSellerApplications = async (token: string, status?: string): Promise<any[]> => {
+  try {
+    const url = status ? `${api.url}/seller-applications?status=${status}` : `${api.url}/seller-applications`
+
+    const response = await fetch(url, {
+      headers: api.getHeaders(token),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch seller applications")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Get seller applications error:", error)
+    // Return empty array instead of throwing
+    return []
+  }
+}
+
+// Get all sellers (for superadmin)
+export const getSellers = async (token: string): Promise<any[]> => {
+  try {
+    const response = await fetch(`${api.url}/users/sellers`, {
+      headers: api.getHeaders(token),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch sellers")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Get sellers error:", error)
+    throw error
+  }
+}
+
+// Get notifications
+export const getNotifications = async (token: string, unreadOnly = false): Promise<any[]> => {
+  try {
+    if (!token) {
+      console.warn("No token provided for getNotifications")
+      return []
+    }
+
+    const url = unreadOnly ? `${api.url}/notifications?unread=true` : `${api.url}/notifications`
+
+    const response = await fetch(url, {
+      headers: api.getHeaders(token),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Token might be expired, clear it
+        localStorage.removeItem("auth_token")
+        console.warn("Authentication token expired or invalid")
+        return []
+      }
+      throw new Error("Failed to fetch notifications")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Get notifications error:", error)
+    // Return empty array instead of throwing
+    return []
+  }
+}
+
+// Mark notification as read
+export const markNotificationAsRead = async (notificationId: string, token: string): Promise<any> => {
+  try {
+    const response = await fetch(`${api.url}/notifications/${notificationId}/read`, {
+      method: "PUT",
+      headers: api.getHeaders(token),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to mark notification as read")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Mark notification as read error:", error)
+    throw error
+  }
+}
+
+// Mark all notifications as read
+export const markAllNotificationsAsRead = async (token: string): Promise<any> => {
+  try {
+    const response = await fetch(`${api.url}/notifications/read-all`, {
+      method: "PUT",
+      headers: api.getHeaders(token),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to mark all notifications as read")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Mark all notifications as read error:", error)
     throw error
   }
 }

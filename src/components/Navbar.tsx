@@ -16,6 +16,8 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const user = useStore((state) => state.user)
+  const cartItems = useStore((state) => state.cart)
+  const wishlistItems = useStore((state) => state.wishlist)
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -114,7 +116,7 @@ export default function Navbar() {
                 >
                   <Heart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">
-                    0
+                    {wishlistItems.length}
                   </span>
                 </Link>
 
@@ -124,7 +126,7 @@ export default function Navbar() {
                 >
                   <ShoppingBag className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">
-                    0
+                    {cartItems.length}
                   </span>
                 </Link>
               </div>
@@ -214,11 +216,11 @@ export default function Navbar() {
                 <div className="flex justify-between items-center px-4 py-2">
                   <Link to="/wishlist" className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
                     <Heart className="w-5 h-5" />
-                    <span>Wishlist</span>
+                    <span>Wishlist ({wishlistItems.length})</span>
                   </Link>
                   <Link to="/cart" className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
                     <ShoppingBag className="w-5 h-5" />
-                    <span>Cart (0)</span>
+                    <span>Cart ({cartItems.length})</span>
                   </Link>
                 </div>
 
