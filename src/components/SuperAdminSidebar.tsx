@@ -148,7 +148,11 @@ export default function SuperAdminSidebar() {
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-800">
         <button
-          onClick={logout}
+          onClick={() => {
+            logout()
+            // Redirect to login page after logout
+            window.location.href = "/matrix/admin/login"
+          }}
           className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <LogOut className="w-5 h-5" />

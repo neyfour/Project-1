@@ -106,9 +106,8 @@ export default function SellersList() {
   }
 
   const viewSellerDashboard = (sellerId: string) => {
-    // In a real implementation, this would navigate to the seller's dashboard
-    // or set a context/state to view the seller's data
-    toast.success("Viewing seller dashboard")
+    // Navigate to the seller's dashboard
+    window.location.href = `/matrix/admin/sellers/${sellerId}/dashboard`
   }
 
   if (loading) {
@@ -224,7 +223,7 @@ export default function SellersList() {
                         </div>
                       </div>
                       <Link
-                        to={`/matrix/admin/sellers/${seller._id}`}
+                        to={`/matrix/admin/sellers/${seller._id}/dashboard`}
                         className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
                       >
                         <ArrowUpRight className="w-5 h-5" />

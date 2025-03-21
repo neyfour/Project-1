@@ -59,8 +59,8 @@ export default function SellerSidebar() {
       icon: Tag,
     },
     {
-      name: "Seller Forum",
-      path: "/seller/forum",
+      name: "Seller Chat",
+      path: "/seller/chat",
       icon: MessageSquare,
     },
     {

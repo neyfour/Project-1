@@ -38,6 +38,7 @@ import TrackOrder from "./pages/TrackOrder"
 import Wishlist from "./pages/Wishlist"
 import ViewDetails from "./pages/ViewDetails"
 import Payment from "./pages/Payment"
+import SellerChat from "./pages/SellerChat"
 import Auth from "./pages/Auth"
 import SellersList from "./pages/SellersList"
 import AdminChat from "./pages/AdminChat"
@@ -265,10 +266,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="/forum"
+                  path="/chat"
                   element={
                     <ProtectedRoute requiredRole="seller">
-                      <SellerForum />
+                      <SellerChat />
                     </ProtectedRoute>
                   }
                 />

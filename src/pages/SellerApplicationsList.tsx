@@ -288,7 +288,7 @@ export default function SellerApplicationsList() {
                             </div>
                           ) : (
                             <Link
-                              to={`/matrix/admin/seller-applications/${application._id}`}
+                              to={`/matrix/admin/sellers/${application.user_id}/dashboard`}
                               className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
                             >
                               <ArrowUpRight className="w-5 h-5" />

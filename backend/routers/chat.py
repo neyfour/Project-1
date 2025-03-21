@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from .users import get_current_user, get_current_active_user
 
 # MongoDB connection
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://amine:amine200%40@cluster-0.iiu2z.mongodb.net/ecommerce_db?retryWrites=true&w=majority")
 client = MongoClient(MONGO_URI)
 db = client["ecommerce_db"]
 

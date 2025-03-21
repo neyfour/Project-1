@@ -182,8 +182,8 @@ export interface ChatMessage {
   sender_avatar?: string
   content: string
   timestamp: string
-  room_id?: string
-  is_system?: boolean
+  room_id: string
+  read?: boolean
 }
 
 // Add a chat room type
@@ -191,8 +191,19 @@ export interface ChatRoom {
   id: string
   name: string
   participants: string[]
-  last_message?: ChatMessage
   created_at: string
+  partner?: {
+    id: string
+    username: string
+    full_name?: string
+    role: string
+    avatar_url?: string
+    isOnline?: boolean
+    lastActive?: Date
+  }
+  last_message?: string
+  last_timestamp?: string
+  unread_count?: number
 }
 
 // Add these types at the end of the file
