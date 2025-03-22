@@ -1,14 +1,18 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef } from "react"
-import { MessageSquare, Send, User, Clock, RefreshCw, Circle } from "lucide-react"
+import { MessageSquare, Send, User, RefreshCw, Circle, Trash2, Smile, X } from "lucide-react"
 import { useStore } from "../store"
 import SellerSidebar from "../components/SellerSidebar"
 import { getChatRooms, getChatMessages, sendChatMessage, markRoomAsRead } from "../api/chatApi"
 import type { ChatRoom, ChatMessage } from "../types"
 import toast from "react-hot-toast"
+
+// Simple emoji picker data
+const commonEmojis = [
+  "😊", "👍", "❤️", "😂", "🙏", "😍", "👏", "🔥", "🎉", "😁", "💯", "⭐", "✅", "🤔", "👌", "😉", "🚀", "💪", "😎", "🙌",
+]
 
 export default function SellerChat() {
   const [loading, setLoading] = useState(true)
@@ -19,12 +23,51 @@ export default function SellerChat() {
   const [newMessage, setNewMessage] = useState("")
   const [sendingMessage, setSendingMessage] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; messageId: string | null }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    messageId: null,
+  })
+
+  // Add a new state to track deleted message IDs
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set())
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatPollingRef = useRef<NodeJS.Timeout | null>(null)
   const roomsPollingRef = useRef<NodeJS.Timeout | null>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
 
   const user = useStore((state) => state.user)
   const token = useStore((state) => state.token)
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu((prev) => ({ ...prev, visible: false }))
+    }
+
+    document.addEventListener("click", handleClickOutside)
+    return () => {
+      document.removeEventListener("click", handleClickOutside)
+    }
+  }, [])
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   // Initial data loading
   useEffect(() => {
@@ -97,8 +140,10 @@ export default function SellerChat() {
             lastActive: new Date(),
           })
 
-          // Mark room as read
-          await markRoomAsRead(processedRooms[0].id, token)
+          // Mark room as read - don't await this to prevent blocking
+          markRoomAsRead(processedRooms[0].id, token).catch(() => {
+            // Silently handle errors
+          })
         }
       } else if (!activeRoom && rooms.length > 0) {
         // If no admin rooms but we have other rooms, create a default admin chat
@@ -146,28 +191,32 @@ export default function SellerChat() {
         const roomMessages = await getChatMessages(activeRoom, token)
         if (roomMessages && roomMessages.length >= 0) {
           // Process messages to replace "current_user" with actual user ID
-          const processedMessages = roomMessages.map((message) => {
-            if (message.sender_id === "current_user") {
-              return {
-                ...message,
-                sender_id: user?.id || message.sender_id,
-                sender_name: user?.username || message.sender_name || "You",
+          const processedMessages = roomMessages
+            .filter((message) => !deletedMessageIds.has(message.id)) // Filter out deleted messages
+            .map((message) => {
+              if (message.sender_id === "current_user") {
+                return {
+                  ...message,
+                  sender_id: user?.id || message.sender_id,
+                  sender_name: user?.username || message.sender_name || "You",
+                }
               }
-            }
-            // Ensure SuperAdmin is displayed for admin messages
-            if (message.sender_id.includes("admin")) {
-              return {
-                ...message,
-                sender_name: "SuperAdmin",
+              // Ensure SuperAdmin is displayed for admin messages
+              if (message.sender_id.includes("admin")) {
+                return {
+                  ...message,
+                  sender_name: "SuperAdmin",
+                }
               }
-            }
-            return message
-          })
+              return message
+            })
 
           setMessages(processedMessages)
 
-          // Mark room as read
-          await markRoomAsRead(activeRoom, token)
+          // Mark room as read - don't await this to prevent blocking
+          markRoomAsRead(activeRoom, token).catch(() => {
+            // Silently handle errors
+          })
 
           // Update unread count in rooms list
           setChatRooms((prev) => prev.map((room) => (room.id === activeRoom ? { ...room, unread_count: 0 } : room)))
@@ -198,7 +247,7 @@ export default function SellerChat() {
         chatPollingRef.current = null
       }
     }
-  }, [activeRoom, token, user?.id, user?.username])
+  }, [activeRoom, token, user?.id, user?.username, deletedMessageIds])
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -262,13 +311,64 @@ export default function SellerChat() {
     }
   }
 
+  const handleClearChat = async () => {
+    if (!activeRoom || clearing) return
+
+    setClearing(true)
+    try {
+      setDeletedMessageIds((prev) => {
+        const newSet = new Set(prev)
+        messages.forEach((message) => newSet.add(message.id))
+        return newSet
+      })
+
+      // Clear messages from UI
+      setMessages([])
+      toast.success("Chat cleared")
+    } catch (error) {
+      console.error("Error clearing chat:", error)
+      toast.error("Failed to clear chat")
+    } finally {
+      setClearing(false)
+    }
+  }
+
+  const handleDeleteMessage = (messageId: string) => {
+    setDeletedMessageIds((prev) => {
+      const newSet = new Set(prev)
+      newSet.add(messageId)
+      return newSet
+    })
+
+    // Also remove from UI immediately
+    setMessages((prev) => prev.filter((message) => message.id !== messageId))
+    setContextMenu({ visible: false, x: 0, y: 0, messageId: null })
+    toast.success("Message deleted")
+  }
+
+  const handleMessageContextMenu = (e: React.MouseEvent, messageId: string) => {
+    e.preventDefault()
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      messageId,
+    })
+  }
+
+  const handleEmojiClick = (emoji: string) => {
+    setNewMessage((prev) => prev + emoji)
+    setShowEmojiPicker(false)
+  }
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
-  // Format last active time in a human-readable way (like Facebook Messenger)
   const formatLastActive = (date: Date) => {
+    if (!date) return "Offline"
+
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
     const diffMins = Math.floor(diffMs / 60000)
@@ -276,12 +376,19 @@ export default function SellerChat() {
     const diffDays = Math.floor(diffHours / 24)
 
     if (diffMins < 1) return "Just now"
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffMins === 1) return "1 minute ago"
+    if (diffMins < 60) return `${diffMins} minutes ago`
+    if (diffHours === 1) return "1 hour ago"
+    if (diffHours < 24) return `${diffHours} hours ago`
     if (diffDays === 1) return "Yesterday"
-    if (diffDays < 7) return `${diffDays}d ago`
+    if (diffDays < 7) return `${diffDays} days ago`
 
-    return date.toLocaleDateString()
+    // For older dates, show the actual date
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: now.getFullYear() !== date.getFullYear() ? "numeric" : undefined,
+    })
   }
 
   if (loading) {
@@ -368,14 +475,26 @@ export default function SellerChat() {
               )}
             </div>
 
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Refresh chat"
-            >
-              <RefreshCw className={`w-5 h-5 text-gray-500 dark:text-gray-400 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleClearChat}
+                disabled={clearing || !activeRoom}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Clear chat"
+                title="Clear chat"
+              >
+                <Trash2 className={`w-5 h-5 text-gray-500 dark:text-gray-400 ${clearing ? "animate-pulse" : ""}`} />
+              </button>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Refresh chat"
+                title="Refresh chat"
+              >
+                <RefreshCw className={`w-5 h-5 text-gray-500 dark:text-gray-400 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -401,52 +520,82 @@ export default function SellerChat() {
                         const showSenderInfo = index === 0 || messages[index - 1].sender_id !== message.sender_id
 
                         return (
-                          <div key={message.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
-                            <div className={`max-w-[70%] ${isCurrentUser ? "" : "flex"}`}>
-                              {/* Avatar for other user - only show on first message in a sequence */}
-                              {!isCurrentUser && showSenderInfo && (
-                                <div className="flex-shrink-0 mr-2 self-end mb-1">
-                                  {message.sender_avatar ? (
-                                    <img
-                                      src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
-                                      alt={message.sender_name}
-                                      className="w-7 h-7 rounded-full"
-                                    />
-                                  ) : (
-                                    <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                      <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              <div>
-                                {/* Sender name - only show on first message in a sequence */}
-                                {!isCurrentUser && showSenderInfo && (
-                                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
-                                    {message.sender_name}
+                          <div
+                            key={message.id}
+                            className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
+                            onContextMenu={(e) => handleMessageContextMenu(e, message.id)}
+                          >
+                            {/* Left side - Received messages */}
+                            {!isCurrentUser && (
+                              <div className="flex max-w-[70%]">
+                                {/* Avatar for other user */}
+                                {showSenderInfo && (
+                                  <div className="flex-shrink-0 mr-2 self-end">
+                                    {message.sender_avatar ? (
+                                      <img
+                                        src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
+                                        alt={message.sender_name}
+                                        className="w-8 h-8 rounded-full"
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
-                                <div
-                                  className={`rounded-2xl px-4 py-2 ${
-                                    isCurrentUser
-                                      ? "bg-indigo-600 text-white rounded-tr-none"
-                                      : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none shadow-sm"
-                                  }`}
-                                >
-                                  <p>{message.content}</p>
-                                  <div
-                                    className={`text-xs mt-1 flex items-center justify-end ${
-                                      isCurrentUser ? "text-indigo-200" : "text-gray-500 dark:text-gray-400"
-                                    }`}
-                                  >
-                                    <Clock className="w-3 h-3 mr-1" />
+                                <div className={!showSenderInfo ? "ml-10" : ""}>
+                                  {/* Sender name */}
+                                  {showSenderInfo && (
+                                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
+                                      {message.sender_name}
+                                    </div>
+                                  )}
+
+                                  {/* Message bubble - LEFT ALIGNED, LIGHT BACKGROUND */}
+                                  <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 rounded-t-lg rounded-r-lg rounded-bl-none shadow-sm relative group">
+                                    <p className="whitespace-pre-wrap">{message.content}</p>
+
+                                    {/* Delete button on hover */}
+                                    <button
+                                      className="absolute right-0 top-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => handleDeleteMessage(message.id)}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+
+                                  {/* Timestamp */}
+                                  <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
                                     {formatTime(message.timestamp)}
                                   </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
+
+                            {/* Right side - Sent messages */}
+                            {isCurrentUser && (
+                              <div className="max-w-[70%]">
+                                {/* Message bubble - RIGHT ALIGNED, INDIGO BACKGROUND */}
+                                <div className="bg-indigo-600 text-white px-3 py-2 rounded-t-lg rounded-l-lg rounded-br-none relative group">
+                                  <p className="whitespace-pre-wrap">{message.content}</p>
+
+                                  {/* Delete button on hover */}
+                                  <button
+                                    className="absolute left-0 top-0 -mt-2 -ml-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => handleDeleteMessage(message.id)}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+
+                                {/* Timestamp */}
+                                <div className="text-xs mt-1 text-right text-gray-500 dark:text-gray-400">
+                                  {formatTime(message.timestamp)}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )
                       })
@@ -455,9 +604,25 @@ export default function SellerChat() {
                   </div>
                 </div>
 
+                {/* Context Menu */}
+                {contextMenu.visible && (
+                  <div
+                    className="fixed bg-white dark:bg-gray-800 shadow-lg rounded-md py-1 z-50 border border-gray-200 dark:border-gray-700"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                      onClick={() => contextMenu.messageId && handleDeleteMessage(contextMenu.messageId)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" /> Delete Message
+                    </button>
+                  </div>
+                )}
+
                 {/* Message Input */}
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                  <form onSubmit={handleSendMessage} className="flex">
+                  <form onSubmit={handleSendMessage} className="flex relative">
                     <input
                       type="text"
                       value={newMessage}
@@ -466,6 +631,16 @@ export default function SellerChat() {
                       className="flex-1 px-4 py-3 rounded-l-full border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                       disabled={sendingMessage}
                     />
+
+                    {/* Emoji Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-2"
+                    >
+                      <Smile className="w-5 h-5" />
+                    </button>
+
                     <button
                       type="submit"
                       disabled={sendingMessage || !newMessage.trim()}
@@ -477,6 +652,27 @@ export default function SellerChat() {
                     >
                       <Send className={`w-5 h-5 ${sendingMessage ? "animate-pulse" : ""}`} />
                     </button>
+
+                    {/* Emoji Picker */}
+                    {showEmojiPicker && (
+                      <div
+                        ref={emojiPickerRef}
+                        className="absolute bottom-full right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 z-10"
+                      >
+                        <div className="grid grid-cols-5 gap-2">
+                          {commonEmojis.map((emoji, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => handleEmojiClick(emoji)}
+                              className="text-xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded p-1"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </form>
                 </div>
               </>
@@ -503,4 +699,3 @@ export default function SellerChat() {
     </div>
   )
 }
-

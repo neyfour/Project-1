@@ -8,7 +8,8 @@ import Footer from "./components/Footer"
 import Home from "./pages/Home"
 import SuperAdminDashboard from "./pages/SuperAdminDashboard"
 import SellerDashboard from "./pages/SellerDashboard"
-import SellerForum from "./pages/SellerForum"
+import SellerPredictionsPage from "./pages/SellerPredictionsPage"
+import SellerStatisticsPage from "./pages/SellerStatisticsPage"
 import ProductsPage from "./pages/ProductsPage"
 import OrdersPage from "./pages/OrdersPage"
 import PredictionsPage from "./pages/PredictionsPage"
@@ -44,6 +45,8 @@ import SellersList from "./pages/SellersList"
 import AdminChat from "./pages/AdminChat"
 import type { JSX } from "react/jsx-runtime"
 import SellerApplicationsList from "./pages/SellerApplicationsList"
+
+
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole?: string | string[] }) => {
@@ -229,7 +232,7 @@ function App() {
                   path="/predictions"
                   element={
                     <ProtectedRoute requiredRole="seller">
-                      <PredictionsPage />
+                      <SellerPredictionsPage />
                     </ProtectedRoute>
                   }
                 />
@@ -237,7 +240,7 @@ function App() {
                   path="/statistics"
                   element={
                     <ProtectedRoute requiredRole="seller">
-                      <StatisticsPage />
+                      <SellerStatisticsPage />
                     </ProtectedRoute>
                   }
                 />
@@ -315,6 +318,7 @@ function App() {
                   <Route path="/track-order" element={<TrackOrder />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/payment" element={<Payment />} />
+              
                 </Routes>
               </main>
               <Chatbot />

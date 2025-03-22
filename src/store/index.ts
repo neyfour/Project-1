@@ -263,10 +263,15 @@ export const useStore = create<StoreState>()(
           wishlist: state.wishlist.filter((item) => item.id !== itemId),
         })),
 
-      isInWishlist: (itemId) => {
-        const { wishlist, user } = get()
-        if (!user) return false
-        return wishlist.some((item) => item.id === itemId && item.user_id === user.id)
+      isInWishlist: (itemId: string) => {
+        try {
+          const { wishlist, user } = get()
+          if (!user || !itemId || !wishlist) return false
+          return wishlist.some((item) => item.id === itemId && item.user_id === user.id)
+        } catch (error) {
+          console.error("Error checking wishlist:", error)
+          return false
+        }
       },
 
       getCartTotal: () => {

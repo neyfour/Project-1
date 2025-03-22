@@ -182,16 +182,30 @@ async def predict_product_sales(
       "prediction_date": datetime.utcnow().isoformat()
   }
 
-@router.get("/sales/seller/{seller_id}", response_model=Dict[str, Any])
-async def predict_seller_sales(
-  seller_id: str = None,
+@router.get("/sales/seller/me", response_model=Dict[str, Any])
+async def predict_current_seller_sales(
   days: int = 30,
   current_user: dict = Depends(get_current_active_user)
 ):
-  # If no seller_id provided, use current user
-  if not seller_id:
-      seller_id = current_user["_id"]
+  # Use the current user's ID
+  seller_id = current_user["_id"]
   
+  # Check if user is a seller
+  if current_user["role"] != "seller" and current_user["role"] != "superadmin":
+      raise HTTPException(
+          status_code=status.HTTP_403_FORBIDDEN,
+          detail="Only sellers can access their sales predictions"
+      )
+  
+  # Reuse the seller prediction logic
+  return await predict_seller_sales(seller_id, days, current_user)
+
+@router.get("/sales/seller/{seller_id}", response_model=Dict[str, Any])
+async def predict_seller_sales(
+  seller_id: str,
+  days: int = 30,
+  current_user: dict = Depends(get_current_active_user)
+):
   # Check if user has permission to view this seller's predictions
   is_self = seller_id == current_user["_id"]
   is_superadmin = current_user["role"] == "superadmin"

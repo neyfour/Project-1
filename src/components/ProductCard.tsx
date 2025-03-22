@@ -16,19 +16,26 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, featured, popular, onQuickView }: ProductCardProps) {
-  const { user, addToCart, addToWishlist, isInWishlist } = useStore()
+  const { user, addToCart, addToWishlist, isInWishlist: checkIsInWishlist } = useStore()
   const [isInWishlistState, setIsInWishlistState] = useState(false)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [showFeedback, setShowFeedback] = useState<string | null>(null)
 
   const placeholderSrc = "/placeholder.svg?height=300&width=400"
 
+  const checkWishlist = (id: string) => {
+    if (typeof checkIsInWishlist === "function") {
+      return checkIsInWishlist(id)
+    }
+    return false
+  }
+
   // Check if product is in wishlist
   useEffect(() => {
     if (product && product.id) {
-      setIsInWishlistState(isInWishlist(product.id))
+      setIsInWishlistState(checkWishlist(product.id))
     }
-  }, [product, isInWishlist])
+  }, [product])
 
   // Clear feedback message after timeout
   useEffect(() => {
