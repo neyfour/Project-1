@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Store, Search, ShoppingBag, Phone, Heart, Menu, X } from "lucide-react"
 import { useStore } from "../store"
@@ -16,10 +16,33 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const user = useStore((state) => state.user)
-  const cartItems = useStore((state) => state.cart)
-  const wishlistItems = useStore((state) => state.wishlist)
+  const getUserCart = useStore((state) => state.getUserCart)
+  const getUserWishlist = useStore((state) => state.getUserWishlist)
   const location = useLocation()
   const navigate = useNavigate()
+
+  // Replace these lines:
+  // const cartItems = useStore((state) => state.cart)
+  // const wishlistItems = useStore((state) => state.wishlist)
+  // const userCartItems = useStore((state) => state.getUserCart())
+  // const userWishlistItems = useStore((state) => state.getUserWishlist())
+
+  // With direct store subscriptions:
+  const cart = useStore((state) => state.cart)
+  const wishlist = useStore((state) => state.wishlist)
+
+  // Calculate counts directly from the store data
+  const cartCount = useMemo(() => {
+    if (!user) return 0
+    const userId = user.id || user._id
+    return cart.filter((item) => item.user_id === userId).length
+  }, [cart, user])
+
+  const wishlistCount = useMemo(() => {
+    if (!user) return 0
+    const userId = user.id || user._id
+    return wishlist.filter((item) => item.user_id === userId).length
+  }, [wishlist, user])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -111,22 +134,34 @@ export default function Navbar() {
                 {user && <NotificationCenter />}
 
                 <Link
-                  to="/wishlist"
+                  to={user ? "/wishlist" : "#"}
+                  onClick={(e) => {
+                    if (!user) {
+                      e.preventDefault()
+                      setIsAuthModalOpen(true)
+                    }
+                  }}
                   className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <Heart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">
-                    {wishlistItems.length}
+                    {wishlistCount}
                   </span>
                 </Link>
 
                 <Link
-                  to="/cart"
+                  to={user ? "/cart" : "#"}
+                  onClick={(e) => {
+                    if (!user) {
+                      e.preventDefault()
+                      setIsAuthModalOpen(true)
+                    }
+                  }}
                   className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <ShoppingBag className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">
-                    {cartItems.length}
+                    {cartCount}
                   </span>
                 </Link>
               </div>
@@ -193,7 +228,7 @@ export default function Navbar() {
                     </Link>
                     <button
                       onClick={() => {
-                        useStore.getState().setUser(null)
+                        useStore.getState().logoutUser()
                         setIsMenuOpen(false)
                       }}
                       className="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-left"
@@ -214,13 +249,33 @@ export default function Navbar() {
                 )}
 
                 <div className="flex justify-between items-center px-4 py-2">
-                  <Link to="/wishlist" className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
+                  <Link
+                    to={user ? "/wishlist" : "#"}
+                    onClick={(e) => {
+                      if (!user) {
+                        e.preventDefault()
+                        setIsAuthModalOpen(true)
+                        setIsMenuOpen(false)
+                      }
+                    }}
+                    className="flex items-center space-x-2 text-gray-700 dark:text-gray-200"
+                  >
                     <Heart className="w-5 h-5" />
-                    <span>Wishlist ({wishlistItems.length})</span>
+                    <span>Wishlist ({wishlistCount})</span>
                   </Link>
-                  <Link to="/cart" className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
+                  <Link
+                    to={user ? "/cart" : "#"}
+                    onClick={(e) => {
+                      if (!user) {
+                        e.preventDefault()
+                        setIsAuthModalOpen(true)
+                        setIsMenuOpen(false)
+                      }
+                    }}
+                    className="flex items-center space-x-2 text-gray-700 dark:text-gray-200"
+                  >
                     <ShoppingBag className="w-5 h-5" />
-                    <span>Cart ({cartItems.length})</span>
+                    <span>Cart ({cartCount})</span>
                   </Link>
                 </div>
 

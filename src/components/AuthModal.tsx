@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { X } from "lucide-react"
-import { loginUser, registerUser } from "../api/authApi"
+import { X, Mail, Lock, User, ArrowRight } from "lucide-react"
+import { loginUser, registerUser, googleLogin } from "../api/authApi"
 import { useStore } from "../store"
 import toast from "react-hot-toast"
+import { GoogleLogin } from "@react-oauth/google"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -45,17 +45,21 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         toast.success("Login successful!")
 
         // Redirect admin users to dashboard
-        if (user.role === "superadmin" ) {
+        if (user.role === "superadmin") {
           navigate("/matrix/admin")
-        }
-        else if (user.role === "seller") {
+        } else if (user.role === "seller") {
           navigate("/seller/dashboard")
         }
 
         onClose()
       } else {
         // Register
-        await registerUser(formData.username, formData.email, formData.password)
+        const userData = {
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.username,
+        }
+        await registerUser(userData)
         toast.success("Registration successful! Please log in.")
         setIsLogin(true)
       }
@@ -66,83 +70,167 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     }
   }
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setLoading(true)
+      const user = await googleLogin(credentialResponse.credential)
+      setUser(user)
+      setToken(localStorage.getItem("auth_token") || "")
+
+      toast.success("Google login successful!")
+
+      // Redirect based on user role
+      if (user.role === "superadmin") {
+        navigate("/matrix/admin")
+      } else if (user.role === "seller") {
+        navigate("/seller/dashboard")
+      }
+
+      onClose()
+    } catch (error) {
+      console.error("Google login error:", error)
+      toast.error("Google login failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    toast.error("Google login failed. Please try again or use email login.")
+  }
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-md relative overflow-hidden">
+        {/* Decorative top bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          aria-label="Close"
         >
           <X size={20} />
         </button>
 
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {isLogin ? "Welcome Back" : "Create Account"}
+            {isLogin ? "Welcome back" : "Create account"}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {isLogin ? "Sign in to your account" : "Sign up for a new account"}
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            {isLogin ? "Sign in to your account to continue" : "Join us to get started with your journey"}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Google login button */}
+        <div className="mb-6">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            size="large"
+            width="100%"
+            text={isLogin ? "signin_with" : "signup_with"}
+            shape="rectangular"
+            logo_alignment="center"
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+              Or continue with email
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           {!isLogin && (
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="space-y-1.5">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Username
               </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Your username"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="pl-10 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="johndoe"
+                />
+              </div>
             </div>
           )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Email
             </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="your.email@example.com"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="pl-10 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="you@example.com"
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="••••••••"
-              minLength={6}
-            />
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Password
+              </label>
+              {isLogin && (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="pl-10 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="••••••••"
+                minLength={6}
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/50 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center">
@@ -161,10 +249,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </svg>
                 Processing...
               </span>
-            ) : isLogin ? (
-              "Sign In"
             ) : (
-              "Create Account"
+              <span className="flex items-center">
+                {isLogin ? "Sign in" : "Create account"}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </span>
             )}
           </button>
         </form>
@@ -172,15 +261,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <div className="mt-6 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
           >
-            {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
+            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
           </button>
         </div>
 
         {isLogin && (
           <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Admin login: admin@example.com (password: 123456)
             </p>
           </div>

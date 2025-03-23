@@ -1,43 +1,12 @@
-// src/api/orderApi.ts
 import { api } from "../config/db"
-import type { Order } from "../types"
 
-export const getOrders = async (token: string): Promise<Order[]> => {
+// Create a new order
+export const createOrder = async (orderData: any, token: string): Promise<any> => {
   try {
-    const response = await fetch(`${api.url}/orders`, {
-      headers: api.getHeaders(token),
-    })
-
-    if (!response.ok) {
-      throw new Error("Error fetching orders")
+    if (!token) {
+      throw new Error("Authentication required")
     }
 
-    return await response.json()
-  } catch (error) {
-    console.error("Error fetching orders:", error)
-    throw error
-  }
-}
-
-export const getOrderById = async (id: string, token: string): Promise<Order> => {
-  try {
-    const response = await fetch(`${api.url}/orders/${id}`, {
-      headers: api.getHeaders(token),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Error fetching order with id ${id}`)
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error(`Error fetching order with id ${id}:`, error)
-    throw error
-  }
-}
-
-export const createOrder = async (orderData: Partial<Order>, token: string): Promise<Order> => {
-  try {
     const response = await fetch(`${api.url}/orders`, {
       method: "POST",
       headers: api.getHeaders(token),
@@ -46,49 +15,80 @@ export const createOrder = async (orderData: Partial<Order>, token: string): Pro
 
     if (!response.ok) {
       const errorData = await response.json()
-      throw new Error(errorData.detail || "Error creating order")
+      throw new Error(errorData.detail || "Failed to create order")
     }
 
     return await response.json()
   } catch (error) {
-    console.error("Error creating order:", error)
+    console.error("Create order error:", error)
     throw error
   }
 }
 
-export const updateOrderStatus = async (id: string, status: string, token: string): Promise<any> => {
+// Get user orders
+export const getUserOrders = async (token: string): Promise<any[]> => {
   try {
-    const response = await fetch(`${api.url}/orders/${id}/status?status=${status}`, {
+    if (!token) {
+      throw new Error("Authentication required")
+    }
+
+    const response = await fetch(`${api.url}/orders/user`, {
+      headers: api.getHeaders(token),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch user orders")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Get user orders error:", error)
+    return []
+  }
+}
+
+// Get order details
+export const getOrderDetails = async (orderId: string, token: string): Promise<any> => {
+  try {
+    if (!token) {
+      throw new Error("Authentication required")
+    }
+
+    const response = await fetch(`${api.url}/orders/${orderId}`, {
+      headers: api.getHeaders(token),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch order details")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Get order details error:", error)
+    throw error
+  }
+}
+
+// Update order status (for admin/seller)
+export const updateOrderStatus = async (orderId: string, status: string, token: string): Promise<any> => {
+  try {
+    if (!token) {
+      throw new Error("Authentication required")
+    }
+
+    const response = await fetch(`${api.url}/orders/${orderId}/status`, {
       method: "PUT",
       headers: api.getHeaders(token),
+      body: JSON.stringify({ status }),
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.detail || `Error updating status for order ${id}`)
+      throw new Error("Failed to update order status")
     }
 
     return await response.json()
   } catch (error) {
-    console.error(`Error updating status for order ${id}:`, error)
-    throw error
-  }
-}
-
-export const searchOrders = async (query: string, token: string): Promise<Order[]> => {
-  try {
-    const response = await fetch(`${api.url}/search?query=${encodeURIComponent(query)}&type=orders`, {
-      headers: api.getHeaders(token),
-    })
-
-    if (!response.ok) {
-      throw new Error("Error searching orders")
-    }
-
-    const data = await response.json()
-    return data.results
-  } catch (error) {
-    console.error(`Error searching orders with query ${query}:`, error)
+    console.error("Update order status error:", error)
     throw error
   }
 }

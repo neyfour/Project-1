@@ -6,28 +6,32 @@ export interface User {
   username?: string
   full_name?: string
   avatar_url?: string
-  role: UserRole
-  created_at: string
-  seller_application?: {
-    status: "pending" | "approved" | "rejected"
-    business_name?: string
-    business_type?: string
-    category?: string
-    description?: string
-    submitted_at: string
+  role?: string
+  address?: {
+    street?: string
+    city?: string
+    state?: string
+    postal_code?: string
+    country?: string
   }
+  phone?: string
+  created_at: string
+  seller_application?: any
 }
 
 export interface Product {
   id: string
-  user_id: string
   title: string
-  description: string
   price: number
-  category: string
-  image_url: string
-  created_at: string
-  stock: number
+  image_url?: string
+  stock?: number
+  description?: string
+  category?: string
+  seller_id?: string
+  variants?: any[]
+  created_at?: string
+  updated_at?: string
+  user_id: string
   rating: number
   reviews_count: number
   views_count: number
@@ -36,7 +40,6 @@ export interface Product {
   sku: string
   brand?: string
   sport_type?: string
-  variants?: ProductVariant[]
   specifications?: Record<string, string>
   seller?: {
     full_name: string
@@ -165,24 +168,27 @@ export type Theme = "light" | "dark"
 
 export interface Notification {
   id: string
-  type: "seller_application" | "order_update" | "system"
   title: string
   message: string
-  user_id: string
   read: boolean
   created_at: string
+  type?: string
+  user_id?: string
   data?: any
 }
 
 // Add a message type for the forum/chat
 export interface ChatMessage {
   id: string
-  sender_id: string
-  sender_name: string
-  sender_avatar?: string
-  content: string
-  timestamp: string
   room_id: string
+  user_id: string
+  message: string
+  created_at: string
+  sender_id?: string
+  sender_name?: string
+  sender_avatar?: string
+  content?: string
+  timestamp?: string
   read?: boolean
 }
 
