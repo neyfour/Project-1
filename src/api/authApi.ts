@@ -19,6 +19,7 @@ interface LoginResponse {
   user: User
 }
 
+// Update the registerUser function to match the backend API
 export const registerUser = async (username: string, email: string, password: string): Promise<User> => {
   try {
     const response = await fetch(`${api.url}/users/register`, {
@@ -48,6 +49,7 @@ export const registerUser = async (username: string, email: string, password: st
   }
 }
 
+// Update the loginUser function to match the backend API
 export const loginUser = async (email: string, password: string): Promise<User> => {
   try {
     // Format credentials for OAuth2 password flow
@@ -80,7 +82,7 @@ export const loginUser = async (email: string, password: string): Promise<User> 
   }
 }
 
-// Google login
+// Update the googleLogin function to match the backend API
 export const googleLogin = async (token: string): Promise<User> => {
   try {
     const response = await fetch(`${api.url}/users/google-login`, {
@@ -116,7 +118,7 @@ export const logoutUser = () => {
   console.log("Logging out user")
 }
 
-// Add a function to check if user is logged in
+// Update the checkAuthStatus function to match the backend API
 export const checkAuthStatus = async (): Promise<User | null> => {
   try {
     const token = localStorage.getItem("auth_token")

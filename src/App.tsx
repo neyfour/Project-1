@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { Toaster } from "react-hot-toast"
 import Navbar from "./components/Navbar"
 import Footer from "./components/Footer"
@@ -40,25 +40,37 @@ import Wishlist from "./pages/Wishlist"
 import ViewDetails from "./pages/ViewDetails"
 import Payment from "./pages/Payment"
 import SellerChat from "./pages/SellerChat"
-import Auth from "./pages/Auth"
-import SellersList from "./pages/SellersList"
-import AdminChat from "./pages/AdminChat"
 import type { JSX } from "react/jsx-runtime"
 import SellerApplicationsList from "./pages/SellerApplicationsList"
-
-
+import AuthModal from "./components/AuthModal"
+import SellersList from "./pages/SellersList"
+import AdminChat from "./pages/AdminChat"
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole?: string | string[] }) => {
   const user = useStore((state) => state.user)
   const checkAuth = useStore((state) => state.checkAuth)
+  const navigate = useNavigate()
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   useEffect(() => {
-    checkAuth()
+    const checkAuthentication = async () => {
+      const isAuthenticated = await checkAuth()
+      if (!isAuthenticated) {
+        setShowAuthModal(true)
+      }
+    }
+
+    checkAuthentication()
   }, [checkAuth])
 
   if (!user) {
-    return <Navigate to="/auth" replace />
+    return (
+      <>
+        {showAuthModal && <AuthModal isOpen={true} onClose={() => navigate("/")} />}
+        <Navigate to="/" replace />
+      </>
+    )
   }
 
   if (requiredRole) {
@@ -96,9 +108,6 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Auth Route */}
-        <Route path="/auth" element={<Auth />} />
-
         {/* SuperAdmin Dashboard Routes */}
         <Route
           path="/matrix/admin/*"
@@ -318,7 +327,6 @@ function App() {
                   <Route path="/track-order" element={<TrackOrder />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/payment" element={<Payment />} />
-              
                 </Routes>
               </main>
               <Chatbot />

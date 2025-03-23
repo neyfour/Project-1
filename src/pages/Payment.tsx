@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { CreditCard, Calendar, Lock, CheckCircle, Download, ShieldCheck } from "lucide-react"
@@ -47,10 +46,17 @@ export default function Payment() {
   const location = useLocation()
   const navigate = useNavigate()
   const user = useStore((state) => state.user)
-  const cart = useStore((state) => state.cart)
-  const clearCart = useStore((state) => state.clearCart)
+  const getUserCart = useStore((state) => state.getUserCart)
+  const getCartTotal = useStore((state) => state.getCartTotal)
+  const createOrderFromCart = useStore((state) => state.createOrderFromCart)
 
   useEffect(() => {
+    // Redirect if not logged in
+    if (!user) {
+      navigate("/auth")
+      return
+    }
+
     // Get cart items from localStorage or query params
     const searchParams = new URLSearchParams(location.search)
     const cartParam = searchParams.get("cart")
@@ -76,27 +82,18 @@ export default function Payment() {
         navigate("/cart")
       }
     } else {
-      // Try to get from localStorage
-      const storedCart = localStorage.getItem("cart")
-      if (storedCart) {
-        try {
-          const parsedCart = JSON.parse(storedCart)
-          setCartItems(parsedCart.items || [])
-          setTotalAmount(parsedCart.total || calculateTotal(parsedCart.items))
-        } catch (error) {
-          console.error("Error parsing stored cart:", error)
-        }
+      // Get from user's cart in store
+      const userCart = getUserCart()
+      if (userCart.length > 0) {
+        setCartItems(userCart)
+        setTotalAmount(getCartTotal())
       } else {
         // No cart data found
         toast.error("No items in cart")
         navigate("/cart")
       }
     }
-  }, [location, navigate])
-
-  const calculateTotal = (items: CartItem[]) => {
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  }
+  }, [location, navigate, user, getUserCart, getCartTotal])
 
   const formatCardNumber = (value: string) => {
     // Remove all non-digit characters
@@ -201,7 +198,7 @@ export default function Payment() {
     return Object.keys(errors).length === 0
   }
 
-  const generateInvoice = () => {
+  const generateInvoice = (orderData: any) => {
     const doc = new jsPDF()
 
     // Add invoice header
@@ -225,7 +222,7 @@ export default function Payment() {
     }
 
     // Add invoice details
-    doc.text(`Invoice #: INV-${orderId || Math.floor(Math.random() * 10000)}`, 140, 40)
+    doc.text(`Invoice #: INV-${orderData.id || Math.floor(Math.random() * 10000)}`, 140, 40)
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 45)
 
     // Add table header
@@ -270,25 +267,12 @@ export default function Payment() {
     // Save the PDF
     const pdfBlob = doc.output("blob")
     const pdfUrl = URL.createObjectURL(pdfBlob)
-    setInvoiceUrl(pdfUrl)
 
     return pdfUrl
   }
 
-  const saveOrderToDatabase = async () => {
-    // In a real app, this would be an API call to save the order
-    // For now, we'll simulate it
-    const newOrderId = `ORD-${Math.floor(Math.random() * 100000)}`
-    setOrderId(newOrderId)
-
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    return newOrderId
-  }
-
-  // Add this function at the top of the component
-  const processPaymentWithFallback = async (paymentData) => {
+  // Process payment with fallback
+  const processPaymentWithFallback = async (paymentData: any) => {
     try {
       // Try to process payment with the backend
       const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/payments/process`, {
@@ -322,7 +306,6 @@ export default function Payment() {
     }
   }
 
-  // Replace the handleSubmit function with this updated version
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -350,41 +333,32 @@ export default function Payment() {
         },
         billing_address: billingAddress,
         shipping_address: shippingAddress,
-        items: cart.map((item) => ({
-          product_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-        })),
       }
 
-      // Process payment with fallback
-      const result = await processPaymentWithFallback(paymentData)
+      // Process payment
+      const paymentResult = await processPaymentWithFallback(paymentData)
 
-      if (result.success) {
-        // Clear cart
-        clearCart()
+      if (paymentResult.success) {
+        // Create order in database
+        const orderData = await createOrderFromCart(shippingAddress, {
+          transaction_id: paymentResult.transaction_id,
+          payment_method: "credit_card",
+          payment_date: paymentResult.date,
+        })
 
         // Set order details for confirmation
-        setOrderDetails({
-          id: result.transaction_id,
-          date: result.date,
-          total: totalAmount,
-          items: cart,
-        })
+        setOrderDetails(orderData)
+        setOrderId(orderData.id || paymentResult.transaction_id)
+
+        // Generate invoice
+        const invoiceUrl = generateInvoice(orderData)
+        setInvoiceUrl(invoiceUrl)
 
         // Show success message
+        setPaymentSuccess(true)
         toast.success("Payment successful!")
-
-        // Navigate to confirmation page
-        navigate("/order-confirmation", {
-          state: {
-            orderId: result.transaction_id,
-            orderDate: result.date,
-            orderTotal: totalAmount,
-          },
-        })
       } else {
-        throw new Error(result.message || "Payment failed")
+        throw new Error(paymentResult.message || "Payment failed")
       }
     } catch (error) {
       toast.error(error.message || "Payment processing failed")
@@ -392,6 +366,11 @@ export default function Payment() {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  // If not logged in, don't render (redirect will happen)
+  if (!user) {
+    return null
   }
 
   return (

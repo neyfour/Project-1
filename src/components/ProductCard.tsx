@@ -86,6 +86,7 @@ export default function ProductCard({ product, featured, popular, onQuickView }:
     }
 
     addToWishlist(product)
+    // Update the local state immediately
     setIsInWishlistState(true)
     setShowFeedback("Added to wishlist")
   }

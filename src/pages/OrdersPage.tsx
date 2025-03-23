@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Search, ShoppingBag, Filter, Clock, Package, Truck, CheckCircle, XCircle, Eye } from "lucide-react"
 import { useStore } from "../store"
-import { getOrders, updateOrderStatus, searchOrders } from "../api/orderApi"
+import { getUserOrders, updateOrderStatus} from "../api/orderApi"
 import type { Order } from "../types"
 import Sidebar from "../components/Sidebar"
 import toast from "react-hot-toast"
@@ -30,7 +30,7 @@ export default function OrdersPage() {
           return
         }
 
-        const data = await getOrders(token)
+        const data = await getUserOrders(token)
         setOrders(data)
       } catch (err) {
         console.error("Error fetching orders:", err)
@@ -72,7 +72,7 @@ export default function OrdersPage() {
       setLoading(true)
       if (searchQuery.trim() === "") {
         // If search is empty, reset to full order list
-        const data = await getOrders(token!)
+        const data = await getUserOrders(token!)
         setOrders(data)
       } else {
         // Otherwise perform search

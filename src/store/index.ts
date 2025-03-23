@@ -1,7 +1,14 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { User, Product, Theme, Notification, ChatMessage, ChatRoom, CartItem, WishlistItem } from "../types"
-import { loginUser, registerUser, checkAuthStatus, applyForSeller as apiApplyForSeller } from "../api/authApi"
+import {
+  loginUser,
+  registerUser,
+  checkAuthStatus,
+  applyForSeller as apiApplyForSeller,
+  googleLogin as apiGoogleLogin,
+} from "../api/authApi"
+import { createOrder } from "../api/orderApi"
 import toast from "react-hot-toast"
 
 interface StoreState {
@@ -22,8 +29,9 @@ interface StoreState {
   updateProduct: (product: Product) => void
   deleteProduct: (productId: string) => void
   toggleTheme: () => void
-  loginUser: (email: string, password: string) => Promise<void>
+  loginUser: (email: string, password: string) => Promise<User>
   registerUser: (userData: { email: string; password: string; full_name: string; role?: string }) => Promise<void>
+  googleLogin: (token: string) => Promise<User>
   logoutUser: () => void
   checkAuth: () => Promise<boolean>
   applyForSeller: (applicationData: any) => Promise<any>
@@ -41,6 +49,9 @@ interface StoreState {
   removeFromWishlist: (itemId: string) => void
   isInWishlist: (itemId: string) => boolean
   getCartTotal: () => number
+  getUserCart: () => CartItem[]
+  getUserWishlist: () => WishlistItem[]
+  createOrderFromCart: (shippingAddress: any, paymentInfo: any) => Promise<any>
 }
 
 export const useStore = create<StoreState>()(
@@ -79,6 +90,7 @@ export const useStore = create<StoreState>()(
         try {
           const userData = await loginUser(email, password)
           set({ user: userData, token: localStorage.getItem("auth_token") || "sample-token" })
+          return userData
         } catch (error) {
           console.error("Login failed:", error)
           throw error
@@ -95,9 +107,19 @@ export const useStore = create<StoreState>()(
           throw error
         }
       },
+      googleLogin: async (token) => {
+        try {
+          const userData = await apiGoogleLogin(token)
+          set({ user: userData, token: localStorage.getItem("auth_token") || "sample-token" })
+          return userData
+        } catch (error) {
+          console.error("Google login failed:", error)
+          throw error
+        }
+      },
       logoutUser: () => {
         localStorage.removeItem("auth_token")
-        set({ user: null, token: null, cart: [], wishlist: [] })
+        set({ user: null, token: null })
       },
       checkAuth: async () => {
         try {
@@ -160,7 +182,7 @@ export const useStore = create<StoreState>()(
       setChatRooms: (rooms) => set({ chatRooms: rooms }),
       setActiveRoom: (roomId) => set({ activeRoom: roomId }),
 
-      // Updated cart functions with user-specific functionality
+      // Enhanced cart functions with user-specific functionality
       addToCart: (product, quantity = 1, variant = null) => {
         if (!product || !product.id) {
           console.error("Invalid product data:", product)
@@ -174,11 +196,19 @@ export const useStore = create<StoreState>()(
         }
 
         set((state) => {
+          // Ensure we have a valid user ID
+          const userId = user.id || user._id
+
+          if (!userId) {
+            console.error("User ID is missing")
+            return state
+          }
+
           const existingItemIndex = state.cart.findIndex(
             (item) =>
               item.id === product.id &&
               (!variant || !item.variant || item.variant.id === variant.id) &&
-              item.user_id === user.id,
+              item.user_id === userId,
           )
 
           if (existingItemIndex >= 0) {
@@ -198,7 +228,7 @@ export const useStore = create<StoreState>()(
               image_url: product.image_url || "/placeholder.svg?height=300&width=400",
               quantity: quantity,
               stock: product.stock || 10,
-              user_id: user.id,
+              user_id: userId,
               variant: variant
                 ? {
                     id: variant.id,
@@ -213,19 +243,69 @@ export const useStore = create<StoreState>()(
         })
       },
 
-      updateCartItemQuantity: (itemId, quantity) =>
+      updateCartItemQuantity: (itemId, quantity) => {
+        const { user } = get()
+        if (!user) {
+          toast.error("Please log in to update your cart")
+          return
+        }
+
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return
+        }
+
         set((state) => ({
-          cart: state.cart.map((item) => (item.id === itemId ? { ...item, quantity } : item)),
-        })),
+          cart: state.cart.map((item) =>
+            item.id === itemId && item.user_id === userId ? { ...item, quantity } : item,
+          ),
+        }))
+      },
 
-      removeFromCart: (itemId) =>
+      removeFromCart: (itemId) => {
+        const { user } = get()
+        if (!user) {
+          toast.error("Please log in to remove items from your cart")
+          return
+        }
+
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return
+        }
+
         set((state) => ({
-          cart: state.cart.filter((item) => item.id !== itemId),
-        })),
+          cart: state.cart.filter((item) => !(item.id === itemId && item.user_id === userId)),
+        }))
+      },
 
-      clearCart: () => set({ cart: [] }),
+      clearCart: () => {
+        const { user } = get()
+        if (!user) {
+          toast.error("Please log in to clear your cart")
+          return
+        }
 
-      // Updated wishlist functions with user-specific functionality
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return
+        }
+
+        set((state) => ({
+          cart: state.cart.filter((item) => item.user_id !== userId),
+        }))
+      },
+
+      // Enhanced wishlist functions with user-specific functionality
       addToWishlist: (product) => {
         if (!product || !product.id) {
           console.error("Invalid product data:", product)
@@ -238,9 +318,17 @@ export const useStore = create<StoreState>()(
           return
         }
 
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return
+        }
+
         set((state) => {
           // Check if already in wishlist for this user
-          if (state.wishlist.some((item) => item.id === product.id && item.user_id === user.id)) {
+          if (state.wishlist.some((item) => item.id === product.id && item.user_id === userId)) {
             return state
           }
 
@@ -251,23 +339,47 @@ export const useStore = create<StoreState>()(
             price: product.price || 0,
             image_url: product.image_url || "/placeholder.svg?height=300&width=400",
             stock: product.stock || 10,
-            user_id: user.id,
+            user_id: userId,
           }
 
           return { wishlist: [...state.wishlist, newItem] }
         })
       },
 
-      removeFromWishlist: (itemId) =>
+      removeFromWishlist: (itemId) => {
+        const { user } = get()
+        if (!user) {
+          toast.error("Please log in to remove items from your wishlist")
+          return
+        }
+
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return
+        }
+
         set((state) => ({
-          wishlist: state.wishlist.filter((item) => item.id !== itemId),
-        })),
+          wishlist: state.wishlist.filter((item) => !(item.id === itemId && item.user_id === userId)),
+        }))
+      },
 
       isInWishlist: (itemId: string) => {
         try {
           const { wishlist, user } = get()
           if (!user || !itemId || !wishlist) return false
-          return wishlist.some((item) => item.id === itemId && item.user_id === user.id)
+
+          // Ensure we have a valid user ID
+          const userId = user.id || user._id
+
+          if (!userId) {
+            console.error("User ID is missing")
+            return false
+          }
+
+          return wishlist.some((item) => item.id === itemId && item.user_id === userId)
         } catch (error) {
           console.error("Error checking wishlist:", error)
           return false
@@ -277,9 +389,104 @@ export const useStore = create<StoreState>()(
       getCartTotal: () => {
         const { cart, user } = get()
         if (!user) return 0
+
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return 0
+        }
+
         return cart
-          .filter((item) => item.user_id === user.id)
+          .filter((item) => item.user_id === userId)
           .reduce((total, item) => total + item.price * item.quantity, 0)
+      },
+
+      // Helper functions for user-specific data
+      getUserCart: () => {
+        const { cart, user } = get()
+        if (!user) return []
+
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return []
+        }
+
+        // Debug log to check filtering
+        const userCart = cart.filter((item) => item.user_id === userId)
+        console.log(`Getting cart for user ${userId}:`, userCart)
+        return userCart
+      },
+
+      getUserWishlist: () => {
+        const { wishlist, user } = get()
+        if (!user) return []
+
+        // Ensure we have a valid user ID
+        const userId = user.id || user._id
+
+        if (!userId) {
+          console.error("User ID is missing")
+          return []
+        }
+
+        // Debug log to check filtering
+        const userWishlist = wishlist.filter((item) => item.user_id === userId)
+        console.log(`Getting wishlist for user ${userId}:`, userWishlist)
+        return userWishlist
+      },
+
+      // Create order from cart
+      createOrderFromCart: async (shippingAddress, paymentInfo) => {
+        const { user, token, getUserCart, getCartTotal, clearCart } = get()
+
+        if (!user || !token) {
+          toast.error("You must be logged in to place an order")
+          throw new Error("Authentication required")
+        }
+
+        const cartItems = getUserCart()
+        if (cartItems.length === 0) {
+          toast.error("Your cart is empty")
+          throw new Error("Cart is empty")
+        }
+
+        try {
+          // Prepare order data
+          const orderData = {
+            user_id: user.id || user._id,
+            status: "pending",
+            total: getCartTotal(),
+            shipping_address: shippingAddress,
+            billing_address: shippingAddress, // Using same address for billing
+            items: cartItems.map((item) => ({
+              product_id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+              product_title: item.title,
+              product_image: item.image_url,
+              variant_title: item.variant?.title,
+            })),
+            payment_status: "paid",
+            payment_info: paymentInfo,
+          }
+
+          // Create order in database
+          const order = await createOrder(orderData, token)
+
+          // Clear the cart after successful order
+          clearCart()
+
+          return order
+        } catch (error) {
+          console.error("Error creating order:", error)
+          toast.error("Failed to create order. Please try again.")
+          throw error
+        }
       },
     }),
     {
