@@ -9,6 +9,7 @@ import ProductCard from "../components/ProductCard"
 import { getProducts } from "../api/productApi"
 import "../styles/Home.css"
 
+
 export default function Home() {
   const navigate = useNavigate()
   const { user } = useStore()

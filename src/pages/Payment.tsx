@@ -6,8 +6,10 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { CreditCard, Calendar, Lock, CheckCircle, Download, ShieldCheck } from "lucide-react"
 import toast from "react-hot-toast"
 import { jsPDF } from "jspdf"
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
 import { useStore } from "../store"
+// Import the processPayment function
+import { processPayment } from "../api/paymentApi"
 
 interface CartItem {
   id: string
@@ -241,7 +243,7 @@ export default function Payment() {
     })
 
     // Generate the table
-    doc.autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 100,
@@ -271,29 +273,37 @@ export default function Payment() {
     return pdfUrl
   }
 
-  // Process payment with fallback
+  // Replace the processPaymentWithFallback function with this updated version:
   const processPaymentWithFallback = async (paymentData: any) => {
     try {
-      // Try to process payment with the backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/payments/process`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        },
-        body: JSON.stringify(paymentData),
-      })
-
-      if (response.ok) {
-        return await response.json()
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        throw new Error("Authentication required")
       }
 
-      // If backend fails, use mock payment processing
-      throw new Error("Backend payment processing failed")
-    } catch (error) {
-      console.log("Using mock payment processing:", error)
+      // Process payment with the backend
+      const response = await processPayment(
+        {
+          payment_method: "credit_card",
+          payment_details: paymentData.card,
+          amount: paymentData.amount,
+          billing_address: paymentData.billing_address,
+          shipping_address: paymentData.shipping_address,
+        },
+        token,
+      )
 
-      // Simulate payment processing
+      return {
+        success: response.status === "completed",
+        transaction_id: response.transaction_id || response._id,
+        amount: response.amount,
+        date: response.created_at,
+        ...response,
+      }
+    } catch (error) {
+      console.log("Payment processing failed:", error)
+
+      // Simulate payment processing for development/testing
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
       // Return mock payment result
@@ -302,10 +312,12 @@ export default function Payment() {
         transaction_id: `mock_tx_${Math.random().toString(36).substring(2, 15)}`,
         amount: paymentData.amount,
         date: new Date().toISOString(),
+        status: "completed",
       }
     }
   }
 
+  // Update the handleSubmit function to properly handle the payment process:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -341,14 +353,17 @@ export default function Payment() {
       if (paymentResult.success) {
         // Create order in database
         const orderData = await createOrderFromCart(shippingAddress, {
-          transaction_id: paymentResult.transaction_id,
           payment_method: "credit_card",
+          card_number: cardNumber.replace(/\s/g, "").slice(-4), // Only store last 4 digits
+          card_expiry: cardExpiry,
+          card_holder: cardName,
+          transaction_id: paymentResult.transaction_id,
           payment_date: paymentResult.date,
         })
 
         // Set order details for confirmation
         setOrderDetails(orderData)
-        setOrderId(orderData.id || paymentResult.transaction_id)
+        setOrderId(orderData.id || orderData._id || paymentResult.transaction_id)
 
         // Generate invoice
         const invoiceUrl = generateInvoice(orderData)

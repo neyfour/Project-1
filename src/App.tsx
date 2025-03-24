@@ -46,6 +46,7 @@ import AuthModal from "./components/AuthModal"
 import SellersList from "./pages/SellersList"
 import AdminChat from "./pages/AdminChat"
 
+
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole?: string | string[] }) => {
   const user = useStore((state) => state.user)
@@ -327,6 +328,7 @@ function App() {
                   <Route path="/track-order" element={<TrackOrder />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/payment" element={<Payment />} />
+                  
                 </Routes>
               </main>
               <Chatbot />

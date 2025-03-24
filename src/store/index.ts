@@ -10,6 +10,7 @@ import {
 } from "../api/authApi"
 import { createOrder } from "../api/orderApi"
 import toast from "react-hot-toast"
+import { processPayment } from "../api/paymentApi"
 
 interface StoreState {
   user: User | null
@@ -458,28 +459,55 @@ export const useStore = create<StoreState>()(
         try {
           // Prepare order data
           const orderData = {
-            user_id: user.id || user._id,
-            status: "pending",
-            total: getCartTotal(),
-            shipping_address: shippingAddress,
-            billing_address: shippingAddress, // Using same address for billing
             items: cartItems.map((item) => ({
               product_id: item.id,
               quantity: item.quantity,
               price: item.price,
-              product_title: item.title,
+              product_name: item.title,
               product_image: item.image_url,
-              variant_title: item.variant?.title,
+              variant: item.variant
+                ? {
+                    color: item.variant.color,
+                    size: item.variant.size,
+                  }
+                : null,
+              seller_id: item.seller_id || "default_seller", // Ensure seller_id is included
             })),
-            payment_status: "paid",
-            payment_info: paymentInfo,
+            shipping_address: shippingAddress,
+            billing_address: shippingAddress, // Using same address for billing
+            payment_method: paymentInfo.payment_method || "credit_card",
+            payment_details: paymentInfo,
           }
 
           // Create order in database
           const order = await createOrder(orderData, token)
 
-          // Clear the cart after successful order
-          clearCart()
+          // Process payment if order was created successfully
+          if (order && order._id) {
+            const paymentData = {
+              order_id: order._id,
+              payment_method: paymentInfo.payment_method || "credit_card",
+              payment_details: {
+                card_number: paymentInfo.card_number,
+                card_expiry: paymentInfo.card_expiry,
+                card_cvc: paymentInfo.card_cvc,
+                card_holder: paymentInfo.card_holder,
+              },
+              amount: getCartTotal(),
+            }
+
+            const paymentResult = await processPayment(paymentData, token)
+
+            // Clear the cart after successful payment
+            if (paymentResult && paymentResult.status === "completed") {
+              clearCart()
+            }
+
+            return {
+              ...order,
+              payment: paymentResult,
+            }
+          }
 
           return order
         } catch (error) {
