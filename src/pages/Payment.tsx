@@ -51,6 +51,7 @@ export default function Payment() {
   const getUserCart = useStore((state) => state.getUserCart)
   const getCartTotal = useStore((state) => state.getCartTotal)
   const createOrderFromCart = useStore((state) => state.createOrderFromCart)
+  const clearCart = useStore((state) => state.clearCart)
 
   useEffect(() => {
     // Redirect if not logged in
@@ -224,7 +225,7 @@ export default function Payment() {
     }
 
     // Add invoice details
-    doc.text(`Invoice #: INV-${orderData.id || Math.floor(Math.random() * 10000)}`, 140, 40)
+    doc.text(`Invoice #: INV-${orderData.id || orderData._id || Math.floor(Math.random() * 10000)}`, 140, 40)
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 45)
 
     // Add table header
@@ -273,13 +274,15 @@ export default function Payment() {
     return pdfUrl
   }
 
-  // Replace the processPaymentWithFallback function with this updated version:
+  // Updated processPaymentWithFallback function with better error handling
   const processPaymentWithFallback = async (paymentData: any) => {
     try {
       const token = localStorage.getItem("auth_token")
       if (!token) {
         throw new Error("Authentication required")
       }
+
+      console.log("Processing payment with data:", JSON.stringify(paymentData))
 
       // Process payment with the backend
       const response = await processPayment(
@@ -289,9 +292,22 @@ export default function Payment() {
           amount: paymentData.amount,
           billing_address: paymentData.billing_address,
           shipping_address: paymentData.shipping_address,
+          order_id: paymentData.order_id,
         },
         token,
       )
+
+      // Check if payment was already processed
+      if (response.already_paid) {
+        return {
+          success: true,
+          already_paid: true,
+          transaction_id: response.transaction_id || response._id,
+          amount: response.amount,
+          date: response.created_at,
+          ...response,
+        }
+      }
 
       return {
         success: response.status === "completed",
@@ -303,17 +319,33 @@ export default function Payment() {
     } catch (error) {
       console.log("Payment processing failed:", error)
 
-      // Simulate payment processing for development/testing
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Return mock payment result
-      return {
-        success: true,
-        transaction_id: `mock_tx_${Math.random().toString(36).substring(2, 15)}`,
-        amount: paymentData.amount,
-        date: new Date().toISOString(),
-        status: "completed",
+      // Check if the error is about payment already processed
+      if (error.message && error.message.includes("Payment already processed")) {
+        return {
+          success: true,
+          already_paid: true,
+          transaction_id: `already_paid_${Date.now()}`,
+          amount: paymentData.amount,
+          date: new Date().toISOString(),
+          status: "completed",
+        }
       }
+
+      // Simulate payment processing for development/testing
+      if (process.env.NODE_ENV === "development") {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+
+        // Return mock payment result
+        return {
+          success: true,
+          transaction_id: `mock_tx_${Math.random().toString(36).substring(2, 15)}`,
+          amount: paymentData.amount,
+          date: new Date().toISOString(),
+          status: "completed",
+        }
+      }
+
+      throw error
     }
   }
 
@@ -334,11 +366,77 @@ export default function Payment() {
     const billingAddress = isSameAddress ? shippingAddress : null
 
     try {
+      // Check if user is authenticated
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        toast.error("Please log in to complete your purchase")
+        navigate("/auth?redirect=/cart")
+        return
+      }
+
+      // Format items for the backend
+      const formattedItems = cartItems.map((item) => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        title: item.title,
+        name: item.title, // Add name field for backend compatibility
+        image: item.image,
+      }))
+
+      // Create order first
+      let orderData
+      try {
+        orderData = await createOrderFromCart(shippingAddress, {
+          payment_method: "credit_card",
+          card_number: cardNumber.replace(/\s/g, "").slice(-4), // Only store last 4 digits
+          card_expiry: cardExpiry,
+          card_holder: cardName,
+        })
+      } catch (error) {
+        console.error("Error creating order:", error)
+
+        // Check if the error is because the order already exists
+        if (error.message && error.message.includes("already exists")) {
+          toast.error("This order has already been placed")
+          setIsProcessing(false)
+          return
+        }
+
+        // For development, create a mock order
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Using mock order for development")
+          // Generate a valid MongoDB ObjectId format (24 hex chars)
+          const mockId = Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join("")
+
+          orderData = {
+            _id: mockId,
+            id: mockId,
+            user_id: "000000000000000000000000",
+            items: formattedItems,
+            total: totalAmount,
+            status: "pending",
+            payment_status: "pending",
+            created_at: new Date().toISOString(),
+            shipping_address: shippingAddress,
+            billing_address: shippingAddress,
+          }
+        } else {
+          throw error
+        }
+      }
+
+      // Set order details for confirmation
+      setOrderDetails(orderData)
+      setOrderId(orderData.id || orderData._id)
+
       // Prepare payment data
       const paymentData = {
+        order_id: orderData._id,
         amount: totalAmount,
-        card: {
-          number: cardNumber.replace(/\s/g, ""),
+        payment_method: "credit_card",
+        payment_details: {
+          number: cardNumber.replace(/\s/g, "").slice(-4),
           expiry: cardExpiry,
           cvc: cardCvc,
           name: cardName,
@@ -348,26 +446,68 @@ export default function Payment() {
       }
 
       // Process payment
-      const paymentResult = await processPaymentWithFallback(paymentData)
+      let paymentResult
+      try {
+        paymentResult = await processPaymentWithFallback(paymentData)
+      } catch (error) {
+        console.error("Error processing payment:", error)
 
-      if (paymentResult.success) {
-        // Create order in database
-        const orderData = await createOrderFromCart(shippingAddress, {
-          payment_method: "credit_card",
-          card_number: cardNumber.replace(/\s/g, "").slice(-4), // Only store last 4 digits
-          card_expiry: cardExpiry,
-          card_holder: cardName,
-          transaction_id: paymentResult.transaction_id,
-          payment_date: paymentResult.date,
-        })
+        // Check if the error is about payment already processed
+        if (error.message && error.message.includes("Payment already processed")) {
+          // Show success message for already processed payments
+          toast.success("Your payment was already processed successfully!")
+          setPaymentSuccess(true)
 
-        // Set order details for confirmation
-        setOrderDetails(orderData)
-        setOrderId(orderData.id || orderData._id || paymentResult.transaction_id)
+          // Generate invoice
+          const invoiceUrl = generateInvoice(orderData)
+          setInvoiceUrl(invoiceUrl)
+
+          setIsProcessing(false)
+          return
+        }
+
+        // For development, create a mock payment result
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Using mock payment result for development")
+          paymentResult = {
+            success: true,
+            transaction_id: `mock_tx_${Math.random().toString(36).substring(2, 15)}`,
+            amount: totalAmount,
+            date: new Date().toISOString(),
+            status: "completed",
+          }
+        } else {
+          throw error
+        }
+      }
+
+      // Check if payment was already processed
+      if (paymentResult.already_paid) {
+        toast.success("Your payment was already processed successfully!")
+        setPaymentSuccess(true)
 
         // Generate invoice
         const invoiceUrl = generateInvoice(orderData)
         setInvoiceUrl(invoiceUrl)
+
+        // Clear cart if needed
+        if (typeof clearCart === "function") {
+          clearCart()
+        }
+
+        setIsProcessing(false)
+        return
+      }
+
+      if (paymentResult.success) {
+        // Generate invoice
+        const invoiceUrl = generateInvoice(orderData)
+        setInvoiceUrl(invoiceUrl)
+
+        // Clear cart if needed
+        if (typeof clearCart === "function") {
+          clearCart()
+        }
 
         // Show success message
         setPaymentSuccess(true)
@@ -376,8 +516,17 @@ export default function Payment() {
         throw new Error(paymentResult.message || "Payment failed")
       }
     } catch (error) {
-      toast.error(error.message || "Payment processing failed")
-      console.error("Payment error:", error)
+      if (error.message === "Authentication required") {
+        toast.error("Please log in to complete your purchase")
+        navigate("/auth?redirect=/cart")
+      } else if (error.message && error.message.includes("Payment already processed")) {
+        // Handle already processed payments
+        toast.success("Your payment was already processed successfully!")
+        setPaymentSuccess(true)
+      } else {
+        toast.error(error.message || "Payment processing failed")
+        console.error("Payment error:", error)
+      }
     } finally {
       setIsProcessing(false)
     }

@@ -14,6 +14,8 @@ import {
 } from "lucide-react"
 import { useStore } from "../store"
 import { logoutUser } from "../api/authApi"
+// Remove the getFullAvatarUrl function we just added and replace with import
+import { getFullAvatarUrl, handleImageError } from "../utils/imageUtils"
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false)
@@ -56,9 +58,11 @@ export default function UserDropdown() {
       >
         {user.avatar_url ? (
           <img
-            src={user.avatar_url || "/placeholder.svg"}
-            alt={user.username}
-            className="w-6 h-6 rounded-full object-cover"
+            src={getFullAvatarUrl(user.avatar_url) || "/placeholder.svg"}
+            alt={user.username || "User"}
+            className="h-8 w-8 rounded-full object-cover"
+            // Update the img tag's onError handler:
+            onError={(e) => handleImageError(e)}
           />
         ) : (
           <User className="w-5 h-5" />

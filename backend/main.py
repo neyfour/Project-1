@@ -51,7 +51,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "2ca83451c4cfa6b46d3826319fec5fc877c946cec7
 ALGORITHM = "HS256"
 
 # Import routers
-from routers import users, products, orders, notifications, chat, seller_applications, payments, seller_payouts, promotions, statistics, predictions
+from routers import users, products, orders, notifications, chat, seller_applications, payments, seller_payouts, promotions, statistics, predictions, settings, sellerdashboard
 
 # Initialize WebSocket connection manager for chat
 class ConnectionManager:
@@ -127,6 +127,8 @@ app.include_router(seller_payouts.router, prefix="/seller-payouts", tags=["selle
 app.include_router(promotions.router, prefix="/promotions", tags=["promotions"])
 app.include_router(statistics.router, prefix="/statistics", tags=["statistics"])
 app.include_router(predictions.router, prefix="/predictions", tags=["predictions"])
+app.include_router(settings.router)
+app.include_router(sellerdashboard.router, prefix="/sellerdashboard", tags=["sellerdashboard"])
 
 # WebSocket endpoint for chat
 @app.websocket("/ws/chat/{user_id}")
@@ -233,6 +235,10 @@ Path(static_dir).mkdir(exist_ok=True)
 Path(images_dir).mkdir(exist_ok=True)
 
 # Mount static files directory
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Mount static files directory
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static")
+os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Run database migration if needed

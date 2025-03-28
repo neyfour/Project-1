@@ -1,24 +1,37 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useEffect } from "react"
+import { Outlet, useNavigate } from "react-router-dom"
+import { useStore } from "../store"
 import SellerSidebar from "../components/SellerSidebar"
-import SellerNavbar from "../components/SellerNavbar"
 
-interface SellerLayoutProps {
-  children: React.ReactNode
-}
+export default function SellerLayout() {
+  const { user, token } = useStore((state) => ({
+    user: state.user,
+    token: state.token,
+  }))
+  const navigate = useNavigate()
 
-export default function SellerLayout({ children }: SellerLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  useEffect(() => {
+    // Check if user is logged in and is a seller
+    if (!token) {
+      navigate("/login")
+      return
+    }
+
+    if (!user || (user.role !== "seller" && user.role !== "admin" && user.role !== "superadmin")) {
+      navigate("/")
+      return
+    }
+  }, [user, token, navigate])
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <SellerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      <div className="md:pl-64 flex flex-col flex-1">
-        <SellerNavbar onMenuButtonClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-6">{children}</main>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <SellerSidebar />
+      <div className="flex-1 ml-0 lg:ml-64 transition-all duration-300 ease-in-out">
+        <main className="p-4 md:p-8 min-h-screen">
+          <Outlet />
+        </main>
       </div>
     </div>
   )

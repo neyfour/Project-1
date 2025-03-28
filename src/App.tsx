@@ -45,7 +45,10 @@ import SellerApplicationsList from "./pages/SellerApplicationsList"
 import AuthModal from "./components/AuthModal"
 import SellersList from "./pages/SellersList"
 import AdminChat from "./pages/AdminChat"
-
+import Settings from "./pages/Settings"
+import SellerProductsPage from "./pages/SellerProductsPage"
+import SellerOrdersPage from "./pages/SellerOrdersPage"
+import EditProduct from "./pages/EditProduct"
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole?: string | string[] }) => {
@@ -226,7 +229,7 @@ function App() {
                   path="/products"
                   element={
                     <ProtectedRoute requiredRole="seller">
-                      <ProductsPage />
+                      <SellerProductsPage />
                     </ProtectedRoute>
                   }
                 />
@@ -234,7 +237,7 @@ function App() {
                   path="/orders"
                   element={
                     <ProtectedRoute requiredRole="seller">
-                      <OrdersPage />
+                      <SellerOrdersPage />
                     </ProtectedRoute>
                   }
                 />
@@ -255,10 +258,18 @@ function App() {
                   }
                 />
                 <Route
-                  path="/products/add"
+                  path="/add-product"
                   element={
                     <ProtectedRoute requiredRole="seller">
                       <AddProduct />
+                    </ProtectedRoute>
+                  }
+                />
+                 <Route
+                  path="/edit-product/:productId"
+                  element={
+                    <ProtectedRoute requiredRole="seller">
+                      <EditProduct />
                     </ProtectedRoute>
                   }
                 />
@@ -328,7 +339,7 @@ function App() {
                   <Route path="/track-order" element={<TrackOrder />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/payment" element={<Payment />} />
-                  
+                  <Route path="/profile" element={<Settings />} />
                 </Routes>
               </main>
               <Chatbot />

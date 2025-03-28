@@ -15,10 +15,11 @@ db = client["ecommerce_db"]
 
 router = APIRouter()
 
+
 @router.get("/", response_model=List[Dict[str, Any]])
 async def get_products(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     category: Optional[str] = None,
     search: Optional[str] = None,
     min_price: Optional[float] = None,
@@ -66,8 +67,13 @@ async def get_products(
     if size:
         query["variants.size"] = size
     
+    # IMPORTANT FIX: Convert seller_id string to ObjectId
     if seller_id:
-        query["seller_id"] = seller_id
+        try:
+            query["seller_id"] = ObjectId(seller_id)
+        except:
+            # If conversion fails, try the original string (for backward compatibility)
+            query["seller_id"] = seller_id
     
     # Get products
     products = list(
@@ -84,6 +90,8 @@ async def get_products(
             product["seller_id"] = str(product["seller_id"])
     
     return products
+
+
 
 @router.get("/categories", response_model=List[str])
 async def get_product_categories():

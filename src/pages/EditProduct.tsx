@@ -3,15 +3,13 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { Upload, Camera, Package, Tag, Palette, Settings, ChevronRight, Plus, X, AlertCircle } from "lucide-react"
-import { createProduct } from "../api/productApi"
+import { getProductById, updateProduct } from "../api/productApi"
 import { useStore } from "../store"
 import { api } from "../config/db"
 import "../styles/AddProduct.css"
 import SellerSidebar from "../components/SellerSidebar"
-
-const PRODUCT_CATEGORIES = ["Soccer", "Basketball", "Running", "Tennis", "Fitness", "Swimming", "Cycling", "Yoga"]
 
 interface ProductForm {
   title: string
@@ -34,12 +32,15 @@ interface ProductVariant {
   attributes: { [key: string]: string }
 }
 
-export default function AddProduct() {
+export default function EditProduct() {
   const navigate = useNavigate()
+  const { productId } = useParams<{ productId: string }>()
   const [currentStep, setCurrentStep] = useState(1)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { user, token } = useStore((state) => ({
     user: state.user,
@@ -70,7 +71,74 @@ export default function AddProduct() {
       navigate("/")
       return
     }
-  }, [user, token, navigate])
+
+    fetchCategories()
+
+    if (productId) {
+      fetchProductDetails(productId)
+    } else {
+      navigate("/seller/products")
+    }
+  }, [user, token, navigate, productId])
+
+  const fetchProductDetails = async (id: string) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const product = await getProductById(id)
+
+      // Convert product data to form format
+      setFormData({
+        title: product.title || "",
+        description: product.description || "",
+        category: product.category || "",
+        price: product.price?.toString() || "",
+        stock: product.stock?.toString() || "",
+        images: product.image_url ? [product.image_url] : [],
+        brand: product.brand || "",
+        sport_type: product.sport_type || "",
+        specifications: product.specifications || {},
+        variants: Array.isArray(product.variants)
+          ? product.variants.map((v: any) => ({
+              title: v.title || "",
+              price: v.price?.toString() || "",
+              stock: v.stock?.toString() || "",
+              attributes: v.attributes || {},
+            }))
+          : [],
+        image_url: product.image_url || "",
+      })
+
+      if (product.image_url) {
+        setImagePreview(product.image_url)
+      }
+    } catch (err: any) {
+      console.error("Error fetching product details:", err)
+      setError("Failed to load product details. " + (err.message || ""))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${api.url}/products/categories`, {
+        headers: token ? api.getHeaders(token) : {},
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories")
+      }
+
+      const data = await response.json()
+      setCategories(data)
+    } catch (err) {
+      console.error("Error fetching categories:", err)
+      // Set default categories if API fails
+      setCategories(["Soccer", "Basketball", "Running", "Tennis", "Fitness", "Swimming", "Cycling", "Yoga"])
+    }
+  }
 
   const steps = [
     { number: 1, title: "Basic Information", icon: Package },
@@ -123,10 +191,11 @@ export default function AddProduct() {
     return true
   }
 
-  // Completely separate function for product creation
-  const handleCreateProduct = () => {
-    if (!token) {
-      setError("You must be logged in to create a product")
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!token || !productId) {
+      setError("You must be logged in and have a valid product ID to update a product")
       return
     }
 
@@ -157,37 +226,15 @@ export default function AddProduct() {
         specifications: formData.specifications || {},
       }
 
-      console.log("Submitting with token:", token)
-      console.log("API URL:", api.url)
+      // Update product via API
+      await updateProduct(productId, productData, token)
 
-      // Create product via API
-      createProduct(productData, token)
-        .then((result) => {
-          console.log("Product created successfully:", result)
-
-          // After successful product creation
-          localStorage.setItem("productCreated", "true")
-          localStorage.setItem("productCreatedTimestamp", Date.now().toString())
-
-          // Redirect to products page on success with a query parameter to force refresh
-          navigate("/seller/products?refresh=true")
-        })
-        .catch((err) => {
-          console.error("Error creating product:", err)
-
-          // Display a more user-friendly error message
-          if (err.message === "Could not validate credentials") {
-            setError("Authentication failed. Please try logging in again.")
-          } else {
-            setError(err.message || "Failed to create product. Please try again.")
-          }
-        })
-        .finally(() => {
-          setIsSubmitting(false)
-        })
+      // Redirect to products page on success
+      navigate("/seller/products")
     } catch (err: any) {
-      console.error("Error creating product:", err)
-      setError(err.message || "Failed to create product. Please try again.")
+      console.error("Error updating product:", err)
+      setError(err.message || "Failed to update product. Please try again.")
+    } finally {
       setIsSubmitting(false)
     }
   }
@@ -205,6 +252,7 @@ export default function AddProduct() {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 placeholder="Enter product title"
+                required
               />
             </div>
             <div>
@@ -215,6 +263,7 @@ export default function AddProduct() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 placeholder="Enter product description"
+                required
               />
             </div>
             <div className="grid grid-cols-2 gap-6">
@@ -224,9 +273,10 @@ export default function AddProduct() {
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  required
                 >
                   <option value="">Select category</option>
-                  {PRODUCT_CATEGORIES.map((category) => (
+                  {categories.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
@@ -264,7 +314,6 @@ export default function AddProduct() {
                   className="w-full h-full object-cover rounded-lg"
                 />
                 <button
-                  type="button"
                   onClick={() => {
                     setImagePreview(null)
                     setFormData((prev) => ({
@@ -297,6 +346,7 @@ export default function AddProduct() {
                     placeholder="0.00"
                     step="0.01"
                     min="0"
+                    required
                   />
                 </div>
               </div>
@@ -309,6 +359,7 @@ export default function AddProduct() {
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="Enter stock quantity"
                   min="0"
+                  required
                 />
               </div>
             </div>
@@ -320,7 +371,6 @@ export default function AddProduct() {
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Product Variants</h3>
               <button
-                type="button"
                 onClick={() => {
                   setFormData((prev) => ({
                     ...prev,
@@ -339,7 +389,6 @@ export default function AddProduct() {
                   <div className="flex justify-between mb-2">
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Variant {index + 1}</h4>
                     <button
-                      type="button"
                       onClick={() => {
                         const newVariants = [...formData.variants]
                         newVariants.splice(index, 1)
@@ -390,7 +439,6 @@ export default function AddProduct() {
                   </div>
                   <div className="mt-2">
                     <button
-                      type="button"
                       onClick={() => {
                         const key = prompt("Enter attribute key (e.g., 'color', 'size')")
                         const value = prompt("Enter attribute value")
@@ -420,7 +468,6 @@ export default function AddProduct() {
                             <span className="font-medium">{key}:</span>
                             <span className="ml-1">{value}</span>
                             <button
-                              type="button"
                               onClick={() => {
                                 const newVariants = [...formData.variants]
                                 const newAttributes = { ...newVariants[index].attributes }
@@ -448,7 +495,6 @@ export default function AddProduct() {
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Specifications</h3>
               <button
-                type="button"
                 onClick={() => {
                   const key = prompt("Enter specification key (e.g., 'Material', 'Weight')")
                   const value = prompt("Enter specification value")
@@ -476,7 +522,6 @@ export default function AddProduct() {
                     <p className="text-gray-600 dark:text-gray-400">{value}</p>
                   </div>
                   <button
-                    type="button"
                     onClick={() => {
                       const newSpecs = { ...formData.specifications }
                       delete newSpecs[key]
@@ -496,6 +541,19 @@ export default function AddProduct() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex">
+        <SellerSidebar />
+        <div className="flex-1 p-6 md:ml-64">
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex">
       <SellerSidebar />
@@ -503,7 +561,7 @@ export default function AddProduct() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
           <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Add New Product</h1>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Product</h1>
             </div>
 
             <div className="p-6">
@@ -539,8 +597,7 @@ export default function AddProduct() {
                 </div>
               )}
 
-              {/* Changed from form to div to completely prevent form submission */}
-              <div className="space-y-8">
+              <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="form-section">{renderStepContent()}</div>
 
                 <div className="flex justify-between">
@@ -555,19 +612,18 @@ export default function AddProduct() {
                   </button>
                   {currentStep === steps.length ? (
                     <button
-                      type="button" // Changed from submit to button
-                      onClick={handleCreateProduct} // Direct call to product creation function
+                      type="submit"
                       disabled={isSubmitting}
                       className="flex items-center gap-2 px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-indigo-400 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                          <span>Submitting...</span>
+                          <span>Updating...</span>
                         </>
                       ) : (
                         <>
-                          <span>Create Product</span>
+                          <span>Update Product</span>
                           <ChevronRight className="w-4 h-4" />
                         </>
                       )}
@@ -587,7 +643,7 @@ export default function AddProduct() {
                     </button>
                   )}
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>

@@ -70,7 +70,7 @@ async def get_orders(
             if product:
                 item["product"] = {
                     "_id": str(product["_id"]),
-                    "name": product["name"],
+                    "name": product["title"],
                     "image_url": product["image_url"]
                 }
             
@@ -157,7 +157,7 @@ async def get_order(
         if product:
             item["product"] = {
                 "_id": str(product["_id"]),
-                "name": product["name"],
+                "name": product["title"],
                 "image_url": product["image_url"]
             }
         
@@ -216,7 +216,7 @@ async def create_order(
             "seller_id": str(product["seller_id"]),
             "quantity": item["quantity"],
             "price": price,
-            "product_name": product["name"],
+            "product_name": product["title"],
             "product_image": product["image_url"]
         })
         

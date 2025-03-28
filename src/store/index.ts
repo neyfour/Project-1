@@ -53,6 +53,8 @@ interface StoreState {
   getUserCart: () => CartItem[]
   getUserWishlist: () => WishlistItem[]
   createOrderFromCart: (shippingAddress: any, paymentInfo: any) => Promise<any>
+  login: (userData: User, token: string) => boolean
+  isAuthenticated: boolean
 }
 
 export const useStore = create<StoreState>()(
@@ -68,6 +70,7 @@ export const useStore = create<StoreState>()(
       activeRoom: null,
       cart: [],
       wishlist: [],
+      isAuthenticated: false,
       setUser: (user) => set({ user }),
       setToken: (token) => set({ token }),
       setProducts: (products) => set({ products }),
@@ -515,6 +518,26 @@ export const useStore = create<StoreState>()(
           toast.error("Failed to create order. Please try again.")
           throw error
         }
+      },
+      login: (userData, token) => {
+        // Validate token before saving
+        if (!token || typeof token !== "string" || token.length < 10) {
+          console.error("Invalid token received during login:", token)
+          return false
+        }
+
+        console.log("Saving token to store:", token.substring(0, 10) + "...")
+
+        // Save token to localStorage for persistence
+        localStorage.setItem("token", token)
+
+        set({
+          user: userData,
+          token: token,
+          isAuthenticated: true,
+        })
+
+        return true
       },
     }),
     {

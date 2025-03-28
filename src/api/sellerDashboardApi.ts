@@ -3,15 +3,61 @@ import { api } from "../config/db"
 
 // Types for seller dashboard data
 export interface SellerDashboardData {
-  totalRevenue: number
-  totalOrders: number
-  totalProducts: number
-  averageOrderValue: number
-  revenueByMonth: { month: string; revenue: number }[]
-  topProducts: { id: string; name: string; sales: number; revenue: number }[]
-  categoryDistribution: { category: string; percentage: number }[]
-  customerDemographics: { age: string; percentage: number }[]
-  revenueBreakdown: { source: string; percentage: number }[]
+  product_count: number
+  orders: {
+    today: number
+    yesterday: number
+    this_month: number
+    last_month: number
+    total: number
+    change: {
+      daily: number
+      monthly: number
+    }
+  }
+  revenue: {
+    today: number
+    yesterday: number
+    this_month: number
+    last_month: number
+    total: number
+    change: {
+      daily: number
+      monthly: number
+    }
+  }
+  monthly_data: {
+    month: string
+    revenue: number
+    orders: number
+  }[]
+  top_products: {
+    product_id: string
+    name: string
+    category: string
+    total_quantity: number
+    total_revenue: number
+    image_url: string
+  }[]
+  platform_stats?: {
+    customer_count: number
+    seller_count: number
+    pending_applications: number
+  }
+}
+
+export interface SellerStatisticsHistory {
+  _id: string
+  date: string
+  seller_id: string
+  product_count: number
+  today_orders: number
+  today_revenue: number
+  this_month_orders: number
+  this_month_revenue: number
+  total_revenue: number
+  total_orders: number
+  created_at: string
 }
 
 export interface SellerPredictionData {
@@ -23,30 +69,92 @@ export interface SellerPredictionData {
   recommendations: string[]
 }
 
-// Function to fetch seller dashboard overview data
+// Helper function to check if a token is valid
+const isValidToken = (token: string): boolean => {
+  if (!token) return false
+
+  // Check if token has a reasonable length
+  if (token.length < 10) return false
+
+  // Check if token is in JWT format (three parts separated by dots)
+  if (token.startsWith("Bearer ")) {
+    const actualToken = token.split(" ")[1]
+    return actualToken.split(".").length === 3
+  }
+
+  return token.split(".").length === 3
+}
+
+// Update the getSellerDashboardOverview function to better handle token formatting
 export const getSellerDashboardOverview = async (token: string, sellerId?: string): Promise<SellerDashboardData> => {
+  if (!token) {
+    throw new Error("Authentication token is required")
+  }
+
+  // Validate token format
+  if (!isValidToken(token)) {
+    console.error("Invalid token format:", token.substring(0, 10) + "...")
+    throw new Error("Invalid token format")
+  }
+
+  // Ensure token is properly formatted
+  let formattedToken = token
+  if (!token.startsWith("Bearer ")) {
+    formattedToken = `Bearer ${token}`
+  }
+
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
+    Authorization: formattedToken,
   }
 
-  // Use the correct endpoint from your backend
-  const response = await fetch(`${api.url}/statistics/dashboard${sellerId ? `?seller_id=${sellerId}` : ""}`, {
-    headers,
-    method: "GET",
-    mode: "cors", // Explicitly set CORS mode
-    credentials: "include",
-    signal: AbortSignal.timeout(10000), // 10 second timeout
-  })
+  try {
+    // Use the sellerdashboard endpoint
+    const url = new URL(`${api.url}/sellerdashboard/dashboard`)
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    console.error("Dashboard API error:", errorData)
-    throw new Error(`Error fetching dashboard data: ${response.status}`)
+    // Always pass the seller_id parameter if available to ensure we get data for the correct seller
+    if (sellerId) {
+      url.searchParams.append("seller_id", sellerId)
+    }
+
+    // Add a cache buster to prevent caching of dashboard data
+    url.searchParams.append("_", Date.now().toString())
+
+    console.log("Making API request to:", url.toString())
+    console.log("With headers:", {
+      "Content-Type": "application/json",
+      Authorization: formattedToken.substring(0, 15) + "...", // Log partial token for security
+    })
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers,
+      // Add credentials to include cookies if needed
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      // Get more detailed error information if available
+      let errorMessage = `Error fetching dashboard data: ${response.status}`
+      try {
+        const errorData = await response.json()
+        if (errorData.detail) {
+          errorMessage += ` - ${errorData.detail}`
+        }
+      } catch (e) {
+        // If we can't parse the error response, just use the status code
+      }
+
+      console.error("Dashboard API error:", errorMessage)
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error("Dashboard API request failed:", error)
+    throw error
   }
-
-  const data = await response.json()
-  return transformDashboardData(data)
 }
 
 // Function to fetch seller sales predictions
@@ -57,7 +165,7 @@ export const getSellerSalesPredictions = async (
 ): Promise<SellerPredictionData> => {
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
+    Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
   }
 
   // Convert timeframe to days for the backend
@@ -74,9 +182,6 @@ export const getSellerSalesPredictions = async (
   const response = await fetch(url, {
     method: "GET",
     headers,
-    mode: "cors", // Explicitly set CORS mode
-    credentials: "include",
-    signal: AbortSignal.timeout(10000), // 10 second timeout
   })
 
   if (!response.ok) {
@@ -97,7 +202,7 @@ export const getSellerProductPredictions = async (
 ): Promise<any> => {
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
+    Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
   }
 
   // Convert timeframe to days for the backend
@@ -109,9 +214,6 @@ export const getSellerProductPredictions = async (
   const response = await fetch(`${api.url}/predictions/sales/${productId}?days=${days}`, {
     method: "GET",
     headers,
-    mode: "cors", // Explicitly set CORS mode
-    credentials: "include",
-    signal: AbortSignal.timeout(10000), // 10 second timeout
   })
 
   if (!response.ok) {
@@ -131,7 +233,7 @@ export const getSellerStatistics = async (
 ): Promise<SellerDashboardData> => {
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
+    Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
   }
 
   // For history endpoint, we need to convert period to days
@@ -140,17 +242,22 @@ export const getSellerStatistics = async (
   if (period === "month") days = 30
   if (period === "week") days = 7
 
-  // Use the correct endpoint from your backend
-  const response = await fetch(
-    `${api.url}/statistics/history?days=${days}${sellerId ? `&seller_id=${sellerId}` : ""}`,
-    {
-      method: "GET",
-      headers,
-      mode: "cors", // Explicitly set CORS mode
-      credentials: "include",
-      signal: AbortSignal.timeout(10000), // 10 second timeout
-    },
-  )
+  // Use the new sellerdashboard endpoint instead of statistics
+  const url = new URL(`${api.url}/sellerdashboard/history`)
+  url.searchParams.append("days", days.toString())
+
+  // Always pass the seller_id parameter if available
+  if (sellerId) {
+    url.searchParams.append("seller_id", sellerId)
+  }
+
+  // Add a cache buster to prevent caching
+  url.searchParams.append("_", Date.now().toString())
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers,
+  })
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -160,6 +267,69 @@ export const getSellerStatistics = async (
 
   const data = await response.json()
   return transformHistoryData(data, period)
+}
+
+// Also update the other API functions to use the same token formatting
+export const getSellerStatisticsHistory = async (
+  token: string,
+  days = 30,
+  sellerId?: string,
+): Promise<SellerStatisticsHistory[]> => {
+  if (!token) {
+    throw new Error("Authentication token is required")
+  }
+
+  // Ensure token is properly formatted
+  let formattedToken = token
+  if (!token.startsWith("Bearer ")) {
+    formattedToken = `Bearer ${token}`
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: formattedToken,
+  }
+
+  try {
+    // Use the sellerdashboard endpoint
+    const url = new URL(`${api.url}/sellerdashboard/history`)
+    url.searchParams.append("days", days.toString())
+
+    // Always pass the seller_id parameter if available
+    if (sellerId) {
+      url.searchParams.append("seller_id", sellerId)
+    }
+
+    // Add a cache buster to prevent caching
+    url.searchParams.append("_", Date.now().toString())
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers,
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      // Get more detailed error information if available
+      let errorMessage = `Error fetching statistics history: ${response.status}`
+      try {
+        const errorData = await response.json()
+        if (errorData.detail) {
+          errorMessage += ` - ${errorData.detail}`
+        }
+      } catch (e) {
+        // If we can't parse the error response, just use the status code
+      }
+
+      console.error("Statistics history API error:", errorMessage)
+      throw new Error(errorMessage)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Statistics history API request failed:", error)
+    throw error
+  }
 }
 
 // Transform dashboard data from the backend format to the frontend format
@@ -175,7 +345,7 @@ function transformDashboardData(data: any): SellerDashboardData {
   const topProducts =
     data.top_products?.map((product: any) => ({
       id: product.product_id,
-      name: product.name,
+      title: product.name,
       sales: product.total_quantity,
       revenue: product.total_revenue,
     })) || []
@@ -217,15 +387,32 @@ function transformDashboardData(data: any): SellerDashboardData {
   const revenueBreakdown = data.revenue_breakdown || [{ source: "Direct Sales", percentage: 100 }]
 
   return {
-    totalRevenue: data.revenue.total || 0,
-    totalOrders: data.orders.total || 0,
-    totalProducts: data.product_count || 0,
-    averageOrderValue,
-    revenueByMonth,
-    topProducts,
-    categoryDistribution,
-    customerDemographics,
-    revenueBreakdown,
+    product_count: data.product_count || 0,
+    orders: data.orders || {
+      today: 0,
+      yesterday: 0,
+      this_month: 0,
+      last_month: 0,
+      total: 0,
+      change: {
+        daily: 0,
+        monthly: 0,
+      },
+    },
+    revenue: data.revenue || {
+      today: 0,
+      yesterday: 0,
+      this_month: 0,
+      last_month: 0,
+      total: 0,
+      change: {
+        daily: 0,
+        monthly: 0,
+      },
+    },
+    monthly_data: data.monthly_data || [],
+    top_products: data.top_products || [],
+    platform_stats: data.platform_stats,
   }
 }
 
@@ -234,15 +421,36 @@ function transformHistoryData(data: any[], period: string): SellerDashboardData 
   // If no data, return empty structure
   if (!data || data.length === 0) {
     return {
-      totalRevenue: 0,
-      totalOrders: 0,
-      totalProducts: 0,
-      averageOrderValue: 0,
-      revenueByMonth: [],
-      topProducts: [],
-      categoryDistribution: [{ category: "No Data", percentage: 100 }],
-      customerDemographics: [{ age: "No Data", percentage: 100 }],
-      revenueBreakdown: [{ source: "No Data", percentage: 100 }],
+      product_count: 0,
+      orders: {
+        today: 0,
+        yesterday: 0,
+        this_month: 0,
+        last_month: 0,
+        total: 0,
+        change: {
+          daily: 0,
+          monthly: 0,
+        },
+      },
+      revenue: {
+        today: 0,
+        yesterday: 0,
+        this_month: 0,
+        last_month: 0,
+        total: 0,
+        change: {
+          daily: 0,
+          monthly: 0,
+        },
+      },
+      monthly_data: [],
+      top_products: [],
+      platform_stats: {
+        customer_count: 0,
+        seller_count: 0,
+        pending_applications: 0,
+      },
     }
   }
 
@@ -256,15 +464,36 @@ function transformHistoryData(data: any[], period: string): SellerDashboardData 
   }))
 
   return {
-    totalRevenue: latestStats.total_revenue || 0,
-    totalOrders: latestStats.total_orders || 0,
-    totalProducts: latestStats.product_count || 0,
-    averageOrderValue: latestStats.total_orders ? latestStats.total_revenue / latestStats.total_orders : 0,
-    revenueByMonth,
-    topProducts: [], // Will be populated from separate API call if needed
-    categoryDistribution: [{ category: "No Data", percentage: 100 }],
-    customerDemographics: [{ age: "No Data", percentage: 100 }],
-    revenueBreakdown: [{ source: "No Data", percentage: 100 }],
+    product_count: latestStats.product_count || 0,
+    orders: {
+      today: latestStats.today_orders || 0,
+      yesterday: 0,
+      this_month: latestStats.this_month_orders || 0,
+      last_month: 0,
+      total: latestStats.total_orders || 0,
+      change: {
+        daily: 0,
+        monthly: 0,
+      },
+    },
+    revenue: {
+      today: latestStats.today_revenue || 0,
+      yesterday: 0,
+      this_month: latestStats.this_month_revenue || 0,
+      last_month: 0,
+      total: latestStats.total_revenue || 0,
+      change: {
+        daily: 0,
+        monthly: 0,
+      },
+    },
+    monthly_data: revenueByMonth,
+    top_products: [], // Will be populated from separate API call if needed
+    platform_stats: {
+      customer_count: 0,
+      seller_count: 0,
+      pending_applications: 0,
+    },
   }
 }
 
