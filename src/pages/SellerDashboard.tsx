@@ -247,12 +247,7 @@ export default function SellerDashboard() {
                 <p className="text-gray-600 dark:text-gray-300 mt-1">Here's what's happening with your store today.</p>
               </div>
               <div className="flex gap-4">
-                <Link
-                  to="/seller/products/add"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  Add Product
-                </Link>
+               
                 <Link
                   to="/seller/chat"
                   className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"

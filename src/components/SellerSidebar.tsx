@@ -176,7 +176,7 @@ export default function SellerSidebar() {
               </li>
               <li>
                 <Link
-                  to="/seller/settings"
+                  to="/profile"
                   className={`flex items-center px-3 py-2 rounded-lg ${
                     isActive("/seller/settings")
                       ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
@@ -188,20 +188,7 @@ export default function SellerSidebar() {
                   <span>Account Settings</span>
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/seller/help"
-                  className={`flex items-center px-3 py-2 rounded-lg ${
-                    isActive("/seller/help")
-                      ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
-                      : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                  }`}
-                  onClick={closeSidebar}
-                >
-                  <HelpCircle className="w-5 h-5 mr-2" />
-                  <span>Help & Support</span>
-                </Link>
-              </li>
+           
               <li>
               <Link
             to="/"
