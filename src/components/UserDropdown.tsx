@@ -77,15 +77,19 @@ export default function UserDropdown() {
             <p className="text-sm font-medium text-gray-900 dark:text-white">{user.username || user.full_name}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
             <div className="mt-1 px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-xs font-medium inline-block">
-              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              {user.role ? (
+                    user.role.charAt(0).toUpperCase() + user.role.slice(1)
+                      ) : (
+                      'User'
+                    )}
             </div>
           </div>
 
-          {(user.role === "superadmin" || user.role === "admin") && (
+          {(user.role === "superadmin" ) && (
             <button
               onClick={() => {
                 setIsOpen(false)
-                navigate("/matrix")
+                navigate("/matrix/admin")
               }}
               className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
@@ -106,36 +110,7 @@ export default function UserDropdown() {
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 Seller Dashboard
               </button>
-              <button
-                onClick={() => {
-                  setIsOpen(false)
-                  navigate("/seller/products")
-                }}
-                className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <ShoppingBag className="w-4 h-4 mr-2" />
-                My Products
-              </button>
-              <button
-                onClick={() => {
-                  setIsOpen(false)
-                  navigate("/seller/statistics")
-                }}
-                className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Statistics
-              </button>
-              <button
-                onClick={() => {
-                  setIsOpen(false)
-                  navigate("/seller/forum")
-                }}
-                className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Seller Forum
-              </button>
+             
             </>
           )}
 

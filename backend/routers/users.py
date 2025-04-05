@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta , timezone 
 from pydantic import BaseModel, Field, EmailStr
 import jwt
 from passlib.context import CryptContext
@@ -10,6 +10,7 @@ import os
 from pymongo import MongoClient
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from dateutil.parser import parse 
 
 # MongoDB connection
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://amine:amine200%40@cluster-0.iiu2z.mongodb.net/ecommerce_db?retryWrites=true&w=majority")
@@ -59,6 +60,10 @@ class SellerApplication(BaseModel):
     phone: str
     tax_id: Optional[str] = None
 
+class SuspendUser(BaseModel):
+    suspended_until: Optional[str] = None
+    reason: Optional[str] = None
+
 # Helper functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -101,6 +106,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 async def get_current_active_user(current_user: dict = Depends(get_current_user)):
     if not current_user.get("is_active", True):
         raise HTTPException(status_code=400, detail="Inactive user")
+    # Add suspension check
+    if "suspended_until" in current_user:
+     if datetime.utcnow() < current_user["suspended_until"]:
+        raise HTTPException(403, "...")
+    else:
+        # Auto-unsuspend
+        db.users.update_one(
+            {"_id": ObjectId(current_user["_id"])},
+            {"$unset": {"suspended_until": "", "suspension_reason": ""}}
+        )
     return current_user
 
 # Routes
@@ -155,6 +170,23 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Suspension check with proper timezone handling
+    if "suspended_until" in user: 
+        suspended_until = parse(user["suspended_until"])
+        # Make both datetimes timezone-aware or both naive
+        if suspended_until.tzinfo is not None:
+            # If suspended_until is timezone-aware, make now timezone-aware too
+            now = datetime.now(timezone.utc)
+        else:
+            # If suspended_until is naive, make now naive too
+            now = datetime.utcnow()
+        
+        if now < suspended_until:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Account suspended until {user['suspended_until']}"
+            )
     
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -292,50 +324,43 @@ async def become_seller(
 
 @router.get("/sellers", response_model=List[Dict[str, Any]])
 async def get_sellers(current_user: dict = Depends(get_current_user)):
-    # Only superadmin can view all sellers
     if current_user["role"] != "superadmin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view sellers"
-        )
-    
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     sellers = list(db.users.find({"role": "seller"}))
     
-    # Convert ObjectId to string and remove passwords
     for seller in sellers:
         seller["_id"] = str(seller["_id"])
         if "hashed_password" in seller:
             del seller["hashed_password"]
-        
-        # Get seller application details
-        application = db.seller_applications.find_one({"user_id": seller["_id"]})
-        if application:
-            seller["business_name"] = application.get("business_name")
-            seller["business_type"] = application.get("business_type")
-            seller["application_status"] = application.get("status")
-        
-        # Get seller statistics
+
+        seller_id_str = seller["_id"]
+
+        # PRODUCTS COUNT
+        seller["total_products"] = db.products.count_documents({
+            "seller_id": ObjectId(seller["_id"])
+        })
+
+        # ORDERS AND SALES - UPDATED TO MATCH "delivered" STATUS
         pipeline = [
-            {"$match": {"seller_id": seller["_id"]}},
-            {"$group": {
-                "_id": None,
-                "total_products": {"$sum": 1}
-            }}
-        ]
-        product_stats = list(db.products.aggregate(pipeline))
-        seller["total_products"] = product_stats[0]["total_products"] if product_stats else 0
-        
-        # Get order statistics
-        pipeline = [
-            {"$match": {"items.seller_id": seller["_id"], "status": "completed"}},
+            {"$match": {
+                "items.seller_id": seller_id_str,
+                "status": "delivered",  # Changed from "completed" to "delivered"
+                "payment_status": "paid"
+            }},
             {"$unwind": "$items"},
-            {"$match": {"items.seller_id": seller["_id"]}},
+            {"$match": {"items.seller_id": seller_id_str}},
             {"$group": {
                 "_id": None,
                 "total_sales": {"$sum": {"$multiply": ["$items.price", "$items.quantity"]}},
-                "total_orders": {"$sum": 1}
+                "total_orders": {"$addToSet": "$_id"}
+            }},
+            {"$project": {
+                "total_sales": 1,
+                "total_orders": {"$size": "$total_orders"}
             }}
         ]
+        
         order_stats = list(db.orders.aggregate(pipeline))
         if order_stats:
             seller["total_sales"] = order_stats[0]["total_sales"]
@@ -343,8 +368,33 @@ async def get_sellers(current_user: dict = Depends(get_current_user)):
         else:
             seller["total_sales"] = 0
             seller["total_orders"] = 0
-    
+
     return sellers
+
+@router.delete("/{seller_id}")
+async def delete_seller(
+    seller_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    # Only superadmin can delete sellers
+    if current_user["role"] != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete sellers"
+        )
+
+    # Check if seller exists
+    seller = db.users.find_one({"_id": ObjectId(seller_id)})
+    if not seller:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Seller not found"
+        )
+
+    # Delete seller
+    db.users.delete_one({"_id": ObjectId(seller_id)})
+
+    return {"message": "Seller deleted successfully"}
 
 @router.get("/seller-applications", response_model=List[Dict[str, Any]])
 async def get_seller_applications(
@@ -381,101 +431,71 @@ async def get_seller_applications(
     
     return applications
 
-@router.put("/seller-applications/{application_id}/approve")
-async def approve_seller_application(
-    application_id: str,
-    current_user: dict = Depends(get_current_user)
+@router.put("/seller-applications/{application_id}/status")
+async def update_application_status(
+  application_id: str,
+  status_data: Dict[str, str],
+  current_user: dict = Depends(get_current_user)
 ):
-    # Only superadmin can approve seller applications
-    if current_user["role"] != "superadmin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to approve seller applications"
-        )
-    
-    # Get application
-    application = db.seller_applications.find_one({"_id": ObjectId(application_id)})
-    if not application:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Application not found"
-        )
-    
-    # Update application status
-    db.seller_applications.update_one(
-        {"_id": ObjectId(application_id)},
-        {"$set": {
-            "status": "approved",
-            "approved_by": current_user["_id"],
-            "approved_at": datetime.utcnow()
-        }}
-    )
-    
-    # Update user role
-    db.users.update_one(
-        {"_id": ObjectId(application["user_id"])},
-        {"$set": {"role": "seller"}}
-    )
-    
-    # Create notification for user
-    notification = {
-        "user_id": application["user_id"],
-        "type": "seller_application_approved",
-        "title": "Seller Application Approved",
-        "message": "Your application to become a seller has been approved",
-        "read": False,
-        "created_at": datetime.utcnow()
-    }
-    
-    db.notifications.insert_one(notification)
-    
-    return {"message": "Seller application approved successfully"}
-
-@router.put("/seller-applications/{application_id}/reject")
-async def reject_seller_application(
-    application_id: str,
-    reason: Dict[str, str] = Body(...),
-    current_user: dict = Depends(get_current_user)
-):
-    # Only superadmin can reject seller applications
-    if current_user["role"] != "superadmin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to reject seller applications"
-        )
-    
-    # Get application
-    application = db.seller_applications.find_one({"_id": ObjectId(application_id)})
-    if not application:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Application not found"
-        )
-    
-    # Update application status
-    db.seller_applications.update_one(
-        {"_id": ObjectId(application_id)},
-        {"$set": {
-            "status": "rejected",
-            "rejected_by": current_user["_id"],
-            "rejected_at": datetime.utcnow(),
-            "rejection_reason": reason.get("reason", "")
-        }}
-    )
-    
-    # Create notification for user
-    notification = {
-        "user_id": application["user_id"],
-        "type": "seller_application_rejected",
-        "title": "Seller Application Rejected",
-        "message": f"Your application to become a seller has been rejected. Reason: {reason.get('reason', '')}",
-        "read": False,
-        "created_at": datetime.utcnow()
-    }
-    
-    db.notifications.insert_one(notification)
-    
-    return {"message": "Seller application rejected successfully"}
+  # Only admin and superadmin can update application status
+  if current_user["role"] not in ["admin", "superadmin"]:
+      raise HTTPException(
+          status_code=status.HTTP_403_FORBIDDEN,
+          detail="Not authorized to update application status"
+      )
+  
+  new_status = status_data.get("status")
+  if new_status not in ["approved", "rejected", "pending"]:
+      raise HTTPException(
+          status_code=status.HTTP_400_BAD_REQUEST,
+          detail="Invalid status"
+      )
+  
+  # Get application
+  application = db.seller_applications.find_one({"_id": ObjectId(application_id)})
+  if not application:
+      raise HTTPException(
+          status_code=status.HTTP_404_NOT_FOUND,
+          detail="Application not found"
+      )
+  
+  # Update application status
+  db.seller_applications.update_one(
+      {"_id": ObjectId(application_id)},
+      {
+          "$set": {
+              "status": new_status,
+              "updated_at": datetime.utcnow(),
+              "updated_by": current_user["_id"],
+              "reason": status_data.get("reason", "")
+          }
+      }
+  )
+  
+  # If approved, update user role to seller
+  if new_status == "approved":
+      db.users.update_one(
+          {"_id": ObjectId(application["user_id"])},
+          {"$set": {"role": "seller"}}
+      )
+  
+  # Create notification for the user
+  notification = {
+      "user_id": application["user_id"],
+      "type": "application_status",
+      "title": "Seller Application Update",
+      "message": f"Your seller application has been {new_status}",
+      "read": False,
+      "created_at": datetime.utcnow(),
+      "data": {
+          "application_id": application_id,
+          "status": new_status
+      }
+  }
+  
+  db.notifications.insert_one(notification)
+  
+  return {"message": f"Application status updated to {new_status}"}
 
 @router.get("/notifications", response_model=List[Dict[str, Any]])
 async def get_notifications(
@@ -486,13 +506,13 @@ async def get_notifications(
     query = {}
     
     if current_user["role"] == "superadmin":
-        # Superadmin sees notifications for superadmin and those without a specific user
+        # Superadmin can mark all superadmin notifications as read
         query["$or"] = [
             {"user_id": current_user["_id"]},
             {"user_id": None}
         ]
     else:
-        # Regular users only see their own notifications
+        # Regular users only mark their own notifications as read
         query["user_id"] = current_user["_id"]
     
     if unread_only:
@@ -542,28 +562,105 @@ async def mark_notification_as_read(
     
     return {"message": "Notification marked as read"}
 
-@router.put("/notifications/read-all")
-async def mark_all_notifications_as_read(
+# New endpoints for suspending and unsuspending sellers
+@router.put("/{user_id}/suspend")
+async def suspend_user(
+    user_id: str,
+    suspend_data: SuspendUser,
     current_user: dict = Depends(get_current_user)
 ):
-    # Build query
-    query = {}
+    # Only superadmin can suspend users
+    if current_user["role"] != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to suspend users"
+        )
     
-    if current_user["role"] == "superadmin":
-        # Superadmin can mark all superadmin notifications as read
-        query["$or"] = [
-            {"user_id": current_user["_id"]},
-            {"user_id": None}
-        ]
-    else:
-        # Regular users only mark their own notifications as read
-        query["user_id"] = current_user["_id"]
+    # Check if user exists
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
     
-    # Mark all as read
-    db.notifications.update_many(
-        query,
-        {"$set": {"read": True}}
+    suspended_until = parse(suspend_data.suspended_until)
+    if suspended_until.tzinfo is None:
+        suspended_until = suspended_until.replace(tzinfo=timezone.utc)
+    
+    db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {
+            "suspended_until": suspended_until.isoformat(),  # Store as ISO format string
+            "suspension_reason": suspend_data.reason
+        }}
     )
     
-    return {"message": "All notifications marked as read"}
+    # Create notification for the user
+    notification = {
+        "user_id": user_id,
+        "type": "account_suspension",
+        "title": "Account Suspended",
+        "message": f"Your account has been suspended until {suspend_data.suspended_until}",
+        "read": False,
+        "created_at": datetime.utcnow(),
+        "data": {
+            "suspended_until": suspend_data.suspended_until,
+            "reason": suspend_data.reason
+        }
+    }
+    
+    db.notifications.insert_one(notification)
+    
+    return {"message": "User suspended successfully"}
+
+@router.put("/{user_id}/unsuspend")
+async def unsuspend_user(
+    user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    # Only superadmin can unsuspend users
+    if current_user["role"] != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to unsuspend users"
+        )
+    
+    # Check if user exists
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if user is suspended
+    if "suspended_until" not in user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not suspended"
+        )
+    
+    # Remove suspension
+    db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$unset": {
+            "suspended_until": "",
+            "suspension_reason": ""
+        }}
+    )
+    
+    # Create notification for the user
+    notification = {
+        "user_id": user_id,
+        "type": "account_unsuspension",
+        "title": "Account Unsuspended",
+        "message": "Your account has been unsuspended and is now active",
+        "read": False,
+        "created_at": datetime.utcnow()
+    }
+    
+    db.notifications.insert_one(notification)
+    
+    return {"message": "User unsuspended successfully"}
 

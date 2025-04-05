@@ -72,7 +72,7 @@ export default function Navbar() {
     return location.pathname === path
   }
 
-  const isDashboardPage = location.pathname.startsWith("/matrix")
+  const isDashboardPage = location.pathname.startsWith("/matrix/admin")
 
   return (
     <>
@@ -88,7 +88,7 @@ export default function Navbar() {
             <Link to="/" className="flex items-center space-x-3">
               <Store className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 text-transparent bg-clip-text">
-                Matrix Commerce
+                e-Sports
               </span>
             </Link>
 
@@ -214,7 +214,7 @@ export default function Navbar() {
                   <>
                     {user.role === "admin" && (
                       <Link
-                        to="/matrix"
+                        to="/matrix/admin"
                         className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                       >
                         Dashboard

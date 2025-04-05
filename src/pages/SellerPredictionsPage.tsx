@@ -145,6 +145,9 @@ const SellerPredictionsPage: React.FC = () => {
 
   // Calculate growth indicators for summary cards
   const getGrowthIndicator = (value: number) => {
+    if (value === undefined || isNaN(value)) {
+      value = 0
+    }
     if (value > 0) return { color: "text-green-500", icon: <ArrowUpward className="w-3 h-3 text-green-500 mr-1" /> }
     return { color: "text-red-500", icon: <ArrowDownward className="w-3 h-3 text-red-500 mr-1" /> }
   }
@@ -316,7 +319,10 @@ const SellerPredictionsPage: React.FC = () => {
                           {getGrowthIndicator(currentSummary.revenue_growth).icon}
                           <p className={`text-xs ${getGrowthIndicator(currentSummary.revenue_growth).color}`}>
                             {currentSummary.revenue_growth > 0 ? "+" : ""}
-                            {currentSummary.revenue_growth.toFixed(1)}% growth
+                            {currentSummary.revenue_growth !== undefined && !isNaN(currentSummary.revenue_growth)
+                              ? currentSummary.revenue_growth.toFixed(1)
+                              : "0.0"}
+                            % growth
                           </p>
                         </div>
                       </div>
@@ -560,7 +566,10 @@ const SellerPredictionsPage: React.FC = () => {
                                 className={`font-medium ${product.growth_rate > 0 ? "text-green-500" : "text-red-500"}`}
                               >
                                 {product.growth_rate > 0 ? "+" : ""}
-                                {product.growth_rate.toFixed(1)}%
+                                {product.growth_rate !== undefined && !isNaN(product.growth_rate)
+                                  ? product.growth_rate.toFixed(1)
+                                  : "0.0"}
+                                %
                               </p>
                             </div>
                           </div>
@@ -590,7 +599,10 @@ const SellerPredictionsPage: React.FC = () => {
                           {getGrowthIndicator(currentSummary.revenue_growth).icon}
                           <p className={`text-xs ${getGrowthIndicator(currentSummary.revenue_growth).color}`}>
                             {currentSummary.revenue_growth > 0 ? "+" : ""}
-                            {currentSummary.revenue_growth.toFixed(1)}% growth
+                            {currentSummary.revenue_growth !== undefined && !isNaN(currentSummary.revenue_growth)
+                              ? currentSummary.revenue_growth.toFixed(1)
+                              : "0.0"}
+                            % growth
                           </p>
                         </div>
                       </div>
@@ -626,8 +638,8 @@ const SellerPredictionsPage: React.FC = () => {
                         <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                           {formatCurrency(
                             currentSummary.total_orders > 0
-                              ? currentSummary.total_revenue / currentSummary.total_orders
-                              : 0,
+                              ? (currentSummary.total_revenue / currentSummary.total_orders).toFixed(2)
+                              : "0.00",
                           )}
                         </p>
                         <div className="flex items-center mt-1">
@@ -944,7 +956,7 @@ const SellerPredictionsPage: React.FC = () => {
                                   }`}
                                 >
                                   {product.growth_rate > 0 ? "+" : ""}
-                                  {product.growth_rate.toFixed(1)}%
+                                  {product.growth_rate !== undefined ? product.growth_rate.toFixed(1) : "0.0"}%
                                 </span>
                               </div>
                             </td>
@@ -1013,7 +1025,7 @@ const SellerPredictionsPage: React.FC = () => {
                                     }`}
                                   >
                                     {product.growth_rate > 0 ? "+" : ""}
-                                    {product.growth_rate.toFixed(1)}%
+                                    {product.growth_rate !== undefined ? product.growth_rate.toFixed(1) : "0.0"}%
                                   </p>
                                 </div>
                               </div>

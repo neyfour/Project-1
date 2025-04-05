@@ -1085,3 +1085,90 @@ async def get_statistics_history(
             # In production, re-raise the error
             raise
 
+# New endpoint to get seller information for admin view
+@router.get("/seller/{seller_id}", response_model=Dict[str, Any])
+async def get_seller_info(
+    seller_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """
+    Get seller information for admin view
+    """
+    logger.info(f"Getting seller info for seller_id: {seller_id}")
+    
+    # Check permissions - only superadmin can access this endpoint
+    if current_user["role"] != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view seller information"
+        )
+    
+    try:
+        # Convert seller_id to ObjectId
+        seller_id_obj = safe_object_id(seller_id)
+        if not seller_id_obj:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid seller ID format"
+            )
+        
+        # Get seller from database
+        seller = db.users.find_one({"_id": seller_id_obj, "role": "seller"})
+        if not seller:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Seller not found"
+            )
+        
+        # Convert ObjectId to string for JSON serialization
+        seller["_id"] = str(seller["_id"])
+        
+        # Get seller application if available
+        seller_application = db.seller_applications.find_one({"user_id": seller_id})
+        if seller_application:
+            if "_id" in seller_application:
+                seller_application["_id"] = str(seller_application["_id"])
+        
+        # Return seller information
+        return {
+            "seller": seller,
+            "application": seller_application
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting seller info for seller {seller_id}: {e}", exc_info=True)
+        
+        # In development mode, return mock data
+        if DEVELOPMENT_MODE:
+            logger.info(f"Returning mock seller info for seller {seller_id}")
+            
+            return {
+                "seller": {
+                    "_id": seller_id,
+                    "username": f"seller_{seller_id}",
+                    "email": f"seller_{seller_id}@example.com",
+                    "role": "seller",
+                    "is_active": True,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "business_name": f"Business {seller_id}",
+                    "business_type": "llc",
+                    "phone": "123-456-7890"
+                },
+                "application": {
+                    "_id": f"app_{seller_id}",
+                    "user_id": seller_id,
+                    "business_name": f"Business {seller_id}",
+                    "business_type": "llc",
+                    "category": "retail",
+                    "description": "Sample business description",
+                    "status": "approved",
+                    "submitted_at": (datetime.utcnow() - timedelta(days=30)).isoformat(),
+                    "approved_at": (datetime.utcnow() - timedelta(days=25)).isoformat()
+                }
+            }
+        else:
+            # In production, re-raise the error
+            raise
+

@@ -52,23 +52,40 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         }
 
         onClose()
-      } else {
-        // Register
-        const userData = {
+      }  else {
+        // Register with proper error handling
+        const user = await registerUser({
+          username: formData.username,
           email: formData.email,
-          password: formData.password,
-          full_name: formData.username,
-        }
-        await registerUser(userData)
-        toast.success("Registration successful! Please log in.")
-        setIsLogin(true)
+          password: formData.password
+        });
+        
+        toast.success("Registration successful! Please log in.");
+        setIsLogin(true);
+        setFormData({ username: "", email: "", password: "" }); // Reset form
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Authentication failed")
+      if (error instanceof Error) {
+        if (error.message.includes('Account suspended until')) {
+          // Show modal or custom UI for suspension instead of alert/toast
+          toast.error(error.message, {
+            duration: 8000, // Show for 10 seconds
+            style: {
+              background: '#ef4444',
+              color: '#fff',
+              fontWeight: 'bold'
+            }
+          });
+        } else {
+          toast.error(error.message || "Login failed");
+        }
+      } else {
+        toast.error("An unknown error occurred");
+      }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
@@ -270,7 +287,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         {isLogin && (
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Admin login: admin@example.com (password: 123456)
+              
             </p>
           </div>
         )}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Bell, X, CheckCircle, XCircle, Clock, User } from "lucide-react"
 import { useStore } from "../store"
-import { getSellerApplications } from "../api/notificationApi"
+import { getSellerApplications, updateSellerStatus } from "../api/authApi"
 import toast from "react-hot-toast"
 
 export default function AdminNotificationCenter() {
@@ -52,7 +52,7 @@ export default function AdminNotificationCenter() {
   const handleApplicationAction = async (applicationId: string, userId: string, action: "approved" | "rejected") => {
     try {
       // In a real app, you would call your API to update the application status
-      // await updateSellerStatus(userId, action, token!)
+      await updateSellerStatus(userId, action, "", token!)
 
       // Update the local state
       setApplications((prevApplications) =>

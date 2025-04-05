@@ -250,3 +250,58 @@ async def update_application_status(
   
   return {"message": f"Application status updated to {new_status}"}
 
+# Add DELETE endpoint for seller applications
+@router.delete("/{application_id}")
+async def delete_seller_application(
+    application_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    # Only admin and superadmin can delete applications
+    if current_user["role"] not in ["admin", "superadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete applications"
+        )
+    
+    # Check if application exists
+    try:
+        application = db.seller_applications.find_one({"_id": ObjectId(application_id)})
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid application ID format"
+        )
+    
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found"
+        )
+    
+    # Delete the application
+    result = db.seller_applications.delete_one({"_id": ObjectId(application_id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete application"
+        )
+    
+    # Create notification for the user if user_id exists
+    if "user_id" in application:
+        notification = {
+            "user_id": application["user_id"],
+            "type": "application_deleted",
+            "title": "Seller Application Deleted",
+            "message": "Your seller application has been deleted by an administrator",
+            "read": False,
+            "created_at": datetime.utcnow(),
+            "data": {
+                "application_id": application_id
+            }
+        }
+        
+        db.notifications.insert_one(notification)
+    
+    return {"message": "Application deleted successfully"}
+

@@ -49,6 +49,8 @@ import Settings from "./pages/Settings"
 import SellerProductsPage from "./pages/SellerProductsPage"
 import SellerOrdersPage from "./pages/SellerOrdersPage"
 import EditProduct from "./pages/EditProduct"
+import SuperAdminProducts from "./pages/SuperAdminProducts"
+import SellerCommissionPage from "./pages/sellercommissionpage"
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole?: string | string[] }) => {
@@ -135,14 +137,6 @@ function App() {
                   }
                 />
                 <Route
-                  path="/products"
-                  element={
-                    <ProtectedRoute requiredRole="superadmin">
-                      <ProductsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
                   path="/orders"
                   element={
                     <ProtectedRoute requiredRole="superadmin">
@@ -159,10 +153,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="/statistics"
+                  path="/seller-commissions"
                   element={
                     <ProtectedRoute requiredRole="superadmin">
-                      <StatisticsPage />
+                      <SellerCommissionPage />
                     </ProtectedRoute>
                   }
                 />
@@ -203,6 +197,15 @@ function App() {
                   element={
                     <ProtectedRoute requiredRole="superadmin">
                       <SellerApplicationsList />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* New route for admin to view a specific seller's dashboard */}
+                <Route
+                  path="/products"
+                  element={
+                    <ProtectedRoute requiredRole="superadmin">
+                      <SuperAdminProducts />
                     </ProtectedRoute>
                   }
                 />
@@ -354,4 +357,3 @@ function App() {
 }
 
 export default App
-

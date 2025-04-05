@@ -1,13 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { Users, Search, Filter, CheckCircle, XCircle, Clock, ArrowUpRight } from "lucide-react"
+import { Users, Search, Filter, CheckCircle, XCircle, Clock, Trash } from "lucide-react"
 import { useStore } from "../store"
-import { getSellerApplications, updateSellerStatus } from "../api/authApi"
+import { getSellerApplications, updateSellerStatus, deleteSellerApplication } from "../api/authApi"
 import SuperAdminSidebar from "../components/SuperAdminSidebar"
 import toast from "react-hot-toast"
-import * as api from "../api"
+import { api } from "../config/db"
 
 export default function SellerApplicationsList() {
   const [loading, setLoading] = useState(true)
@@ -16,6 +15,9 @@ export default function SellerApplicationsList() {
   const [filteredApplications, setFilteredApplications] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [currentApplication, setCurrentApplication] = useState<any>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const token = useStore((state) => state.token)
 
@@ -109,7 +111,10 @@ export default function SellerApplicationsList() {
         try {
           await fetch(`${api.url}/notifications`, {
             method: "POST",
-            headers: api.getHeaders(token!),
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify({
               user_id: application.user_id,
               type: "seller_application_status",
@@ -131,6 +136,82 @@ export default function SellerApplicationsList() {
     } catch (err) {
       console.error(`Error ${action} seller application:`, err)
       toast.error(`Failed to ${action} seller application`)
+    }
+  }
+
+  // Function to delete a rejected application
+  const handleDeleteApplication = async (applicationId: string) => {
+    try {
+      if (!token) {
+        toast.error("Authentication required")
+        return
+      }
+
+      if (!applicationId) {
+        toast.error("Cannot delete application: Missing application ID")
+        return
+      }
+
+      // Set deleting state to prevent multiple clicks
+      setIsDeleting(true)
+
+      // Show loading toast
+      const loadingToast = toast.loading("Deleting application...")
+
+      try {
+        // Use the deleteSellerApplication function from authApi
+        const success = await deleteSellerApplication(applicationId, token)
+
+        // Dismiss loading toast
+        toast.dismiss(loadingToast)
+
+        if (success) {
+          // Update local state by removing the deleted application
+          setApplications((prevApplications) => prevApplications.filter((app) => app._id !== applicationId))
+          setFilteredApplications((prevApplications) => prevApplications.filter((app) => app._id !== applicationId))
+          toast.success("Application deleted successfully")
+        }
+      } catch (error) {
+        // Dismiss loading toast
+        toast.dismiss(loadingToast)
+        console.error("Error deleting application:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to delete application")
+      } finally {
+        setIsDeleting(false)
+      }
+    } catch (error) {
+      console.error("Error in delete handler:", error)
+      toast.error("An unexpected error occurred")
+      setIsDeleting(false)
+    }
+  }
+
+  const openEditModal = (application: any) => {
+    setCurrentApplication(application)
+    setIsEditModalOpen(true)
+  }
+
+  const handleStatusUpdate = async (newStatus: "pending" | "approved" | "rejected") => {
+    if (!currentApplication || !currentApplication._id) return
+
+    try {
+      await updateSellerStatus(
+        currentApplication._id,
+        newStatus,
+        newStatus === "rejected" ? "Application status updated by admin" : "",
+        token!,
+      )
+
+      // Update the local state
+      setApplications((prevApplications) =>
+        prevApplications.map((app) => (app._id === currentApplication._id ? { ...app, status: newStatus } : app)),
+      )
+
+      toast.success(`Application status updated to ${newStatus}`)
+      setIsEditModalOpen(false)
+    } catch (err) {
+      console.error("Error updating application status:", err)
+      toast.error("Failed to update application status")
     }
   }
 
@@ -253,13 +334,13 @@ export default function SellerApplicationsList() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full 
-                            ${
-                              application.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                                : application.status === "approved"
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                                  : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                            }`}
+                           ${
+                             application.status === "pending"
+                               ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                               : application.status === "approved"
+                                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                 : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                           }`}
                           >
                             {application.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
                             {application.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
@@ -287,12 +368,37 @@ export default function SellerApplicationsList() {
                               </button>
                             </div>
                           ) : (
-                            <Link
-                              to={`/matrix/admin/sellers/${application.user_id}/dashboard`}
-                              className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
-                            >
-                              <ArrowUpRight className="w-5 h-5" />
-                            </Link>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => openEditModal(application)}
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                                title="Edit Application Status"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="w-5 h-5"
+                                >
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteApplication(application._id)}
+                                disabled={isDeleting}
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50"
+                                title="Delete Application"
+                              >
+                                <Trash className="w-5 h-5" />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -318,6 +424,82 @@ export default function SellerApplicationsList() {
           </div>
         </div>
       </div>
+
+      {/* Edit Status Modal */}
+      {isEditModalOpen && currentApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Edit Application Status</h3>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Business:{" "}
+                <span className="font-medium text-gray-900 dark:text-white">{currentApplication.business_name}</span>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Current Status:
+                <span
+                  className={`ml-2 px-2 py-1 text-xs font-medium rounded-full 
+            ${
+              currentApplication.status === "pending"
+                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                : currentApplication.status === "approved"
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                  : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+            }`}
+                >
+                  {currentApplication.status?.charAt(0).toUpperCase() + currentApplication.status?.slice(1)}
+                </span>
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Status:</label>
+              <div className="flex flex-col space-y-2">
+                <button
+                  onClick={() => handleStatusUpdate("pending")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    currentApplication.status === "pending"
+                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-2 border-yellow-500"
+                      : "bg-yellow-50 text-yellow-800 dark:bg-yellow-900/10 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
+                  }`}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => handleStatusUpdate("approved")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    currentApplication.status === "approved"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-2 border-green-500"
+                      : "bg-green-50 text-green-800 dark:bg-green-900/10 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30"
+                  }`}
+                >
+                  Approved
+                </button>
+                <button
+                  onClick={() => handleStatusUpdate("rejected")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    currentApplication.status === "rejected"
+                      ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-2 border-red-500"
+                      : "bg-red-50 text-red-800 dark:bg-red-900/10 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                  }`}
+                >
+                  Rejected
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
