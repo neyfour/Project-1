@@ -176,7 +176,7 @@ export default function SellerSidebar() {
               </li>
               <li>
                 <Link
-                  to="/profile"
+                  to="/seller/profile-settings"
                   className={`flex items-center px-3 py-2 rounded-lg ${
                     isActive("/seller/settings")
                       ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"

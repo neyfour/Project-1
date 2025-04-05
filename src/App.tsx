@@ -51,6 +51,7 @@ import SellerOrdersPage from "./pages/SellerOrdersPage"
 import EditProduct from "./pages/EditProduct"
 import SuperAdminProducts from "./pages/SuperAdminProducts"
 import SellerCommissionPage from "./pages/sellercommissionpage"
+import SuperAdminSetting from "./pages/superadminsetting"
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole?: string | string[] }) => {
@@ -145,10 +146,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="/predictions"
+                  path="/superadmin-setting"
                   element={
                     <ProtectedRoute requiredRole="superadmin">
-                      <PredictionsPage />
+                      <SuperAdminSetting />
                     </ProtectedRoute>
                   }
                 />
@@ -301,10 +302,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="/promotions"
+                  path="/profile-settings"
                   element={
                     <ProtectedRoute requiredRole="seller">
-                      <Promotions />
+                      <Settings />
                     </ProtectedRoute>
                   }
                 />

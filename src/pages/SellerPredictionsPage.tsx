@@ -311,7 +311,7 @@ const SellerPredictionsPage: React.FC = () => {
                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Projected Revenue</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projected Revenue</p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                           {formatCurrency(currentSummary.total_revenue)}
                         </p>
@@ -434,7 +434,7 @@ const SellerPredictionsPage: React.FC = () => {
                         tick={{ fontSize: 12, fill: "#6B7280" }}
                         axisLine={false}
                         tickLine={false}
-                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                        tickFormatter={(value) => `$${value.toLocaleString()}`}
                         width={60}
                       />
                       <Tooltip
@@ -702,7 +702,7 @@ const SellerPredictionsPage: React.FC = () => {
                         tick={{ fontSize: 12, fill: "#6B7280" }}
                         axisLine={false}
                         tickLine={false}
-                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                        tickFormatter={(value) => `$${value.toLocaleString()}`}
                         width={60}
                       />
                       <Tooltip
@@ -809,7 +809,7 @@ const SellerPredictionsPage: React.FC = () => {
                           tick={{ fontSize: 12, fill: "#6B7280" }}
                           axisLine={false}
                           tickLine={false}
-                          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                          tickFormatter={(value) => `$${value.toLocaleString()}`}
                         />
                         <Tooltip
                           formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
@@ -883,12 +883,7 @@ const SellerPredictionsPage: React.FC = () => {
                           >
                             Category
                           </th>
-                          <th
-                            scope="col"
-                            className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                          >
-                            Price
-                          </th>
+                         
                           <th
                             scope="col"
                             className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
@@ -934,9 +929,7 @@ const SellerPredictionsPage: React.FC = () => {
                                 {product.product_category}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                              {formatCurrency(product.product_price || 0)}
-                            </td>
+                           
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white font-medium">
                               {formatCurrency(product.total_revenue)}
                             </td>
@@ -1005,12 +998,7 @@ const SellerPredictionsPage: React.FC = () => {
                           </div>
                           <div className="flex-1">
                             <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                              <div>
-                                <p className="text-gray-500 dark:text-gray-400">Price</p>
-                                <p className="font-medium text-gray-900 dark:text-white">
-                                  {formatCurrency(product.product_price || 0)}
-                                </p>
-                              </div>
+                             
                               <div>
                                 <p className="text-gray-500 dark:text-gray-400">Growth Rate</p>
                                 <div className="flex items-center">
@@ -1024,6 +1012,7 @@ const SellerPredictionsPage: React.FC = () => {
                                       product.growth_rate > 0 ? "text-green-500" : "text-red-500"
                                     }`}
                                   >
+                                    {product.growth_rate > 0 ? "+" : ""}
                                     {product.growth_rate > 0 ? "+" : ""}
                                     {product.growth_rate !== undefined ? product.growth_rate.toFixed(1) : "0.0"}%
                                   </p>
@@ -1083,7 +1072,7 @@ const SellerPredictionsPage: React.FC = () => {
                         tick={{ fontSize: 12, fill: "#6B7280" }}
                         axisLine={{ stroke: "#E5E7EB" }}
                         tickLine={false}
-                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                        tickFormatter={(value) => `$${value.toLocaleString()}`}
                       />
                       <YAxis
                         dataKey="name"

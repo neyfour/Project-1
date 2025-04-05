@@ -161,7 +161,7 @@ export default function SuperAdminSidebar({ isOpen: propIsOpen, setIsOpen: propS
           </li>
           <li>
             <Link
-              to="/matrix/admin/settings"
+              to="/matrix/admin/superadmin-setting"
               className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                 location.pathname === "/matrix/admin/settings"
                   ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
@@ -169,7 +169,7 @@ export default function SuperAdminSidebar({ isOpen: propIsOpen, setIsOpen: propS
               }`}
             >
               <Settings className="w-5 h-5" />
-              <span className="ml-3">Settings</span>
+              <span className="ml-3">Account Settings</span>
             </Link>
           </li>
         </ul>

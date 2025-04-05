@@ -66,6 +66,7 @@ class SellerPredictionApi {
           use_mock_data: false, // Force real data
           force_real_data: true, // New parameter to force real data even if predictions are low
           min_scale_factor: 100, // Scale factor to apply to low predictions instead of using synthetic data
+          min_data_points: 5, // Allow forecasting with fewer data points
         },
       })
       return response.data
@@ -88,6 +89,7 @@ class SellerPredictionApi {
           use_mock_data: false, // Force real data
           force_real_data: true, // New parameter to force real data even if predictions are low
           min_scale_factor: 100, // Scale factor to apply to low predictions instead of using synthetic data
+          min_data_points: 5, // Allow forecasting with fewer data points
         },
       })
       return response.data
@@ -110,6 +112,7 @@ class SellerPredictionApi {
           use_mock_data: false, // Force real data
           force_real_data: true, // New parameter to force real data even if predictions are low
           min_scale_factor: 100, // Scale factor to apply to low predictions instead of using synthetic data
+          min_data_points: 5, // Allow forecasting with fewer data points
         },
       })
       return response.data
@@ -132,6 +135,7 @@ class SellerPredictionApi {
           use_mock_data: false, // Force real data
           force_real_data: true, // New parameter to force real data even if predictions are low
           min_scale_factor: 100, // Scale factor to apply to low predictions instead of using synthetic data
+          min_data_points: 5, // Allow forecasting with fewer data points
         },
       })
       return response.data
@@ -156,6 +160,7 @@ class SellerPredictionApi {
           use_mock_data: false, // Force real data
           force_real_data: true, // New parameter to force real data even if predictions are low
           min_scale_factor: 100, // Scale factor to apply to low predictions instead of using synthetic data
+          min_data_points: 5, // Allow forecasting with fewer data points
         },
       })
       return response.data
@@ -180,6 +185,7 @@ class SellerPredictionApi {
           use_mock_data: false, // Force real data
           force_real_data: true, // New parameter to force real data even if predictions are low
           min_scale_factor: 100, // Scale factor to apply to low predictions instead of using synthetic data
+          min_data_points: 5, // Allow forecasting with fewer data points
         },
       })
       return response.data
@@ -204,11 +210,27 @@ class SellerPredictionApi {
           use_mock_data: false, // Force real data
           force_real_data: true, // New parameter to force real data even if predictions are low
           min_scale_factor: 100, // Scale factor to apply to low predictions instead of using synthetic data
+          min_data_points: 5, // Allow forecasting with fewer data points
         },
       })
       return response.data
     } catch (error) {
       console.error("Error fetching 5-year top products prediction:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Refresh seller data to force reload from database
+   * @param sellerId - The ID of the seller
+   * @returns Promise with refresh status
+   */
+  async refreshSellerData(sellerId = "1"): Promise<any> {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/seller/predictions/refresh-data/${sellerId}`)
+      return response.data
+    } catch (error) {
+      console.error("Error refreshing seller data:", error)
       throw error
     }
   }
@@ -225,7 +247,6 @@ export const getSixMonthPrediction = async (sellerId: string) => {
         seller_id: sellerId,
         force_real_data: true,
         min_scale_factor: 100.0,
-        // New parameter to allow forecasting with fewer orders
         min_data_points: 5,
       },
     })
@@ -243,7 +264,6 @@ export const getOneYearPrediction = async (sellerId: string) => {
         seller_id: sellerId,
         force_real_data: true,
         min_scale_factor: 100.0,
-        // New parameter to allow forecasting with fewer orders
         min_data_points: 5,
       },
     })
@@ -261,7 +281,6 @@ export const getFiveYearPrediction = async (sellerId: string) => {
         seller_id: sellerId,
         force_real_data: true,
         min_scale_factor: 100.0,
-        // New parameter to allow forecasting with fewer orders
         min_data_points: 5,
       },
     })

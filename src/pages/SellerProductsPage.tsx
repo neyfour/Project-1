@@ -237,6 +237,9 @@ export default function SellerProductsPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-750">
                       <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Product ID
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Product
                         </th>
@@ -257,6 +260,12 @@ export default function SellerProductsPage() {
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                       {filteredProducts.map((product) => (
                         <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                           <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                              {product.id || "no id "}
+                            </span>
+                          </td>
+
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="h-10 w-10 flex-shrink-0">

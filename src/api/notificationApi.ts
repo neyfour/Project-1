@@ -97,3 +97,43 @@ export const getNotificationCount = async (token: string): Promise<number> => {
   }
 }
 
+// Delete a specific notification
+export const deleteNotification = async (notificationId: string, token: string): Promise<any> => {
+  try {
+    const response = await fetch(`${api.url}/notifications/${notificationId}`, {
+      method: "DELETE",
+      headers: api.getHeaders(token),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to delete notification")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Delete notification error:", error)
+    throw error
+  }
+}
+
+// Delete all notifications
+export const deleteAllNotifications = async (token: string): Promise<any> => {
+  try {
+    const response = await fetch(`${api.url}/notifications`, {
+      method: "DELETE",
+      headers: api.getHeaders(token),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to delete all notifications")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Delete all notifications error:", error)
+    throw error
+  }
+}
+

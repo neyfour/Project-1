@@ -213,35 +213,7 @@ const SellerStatisticsPage: React.FC = () => {
                 </p>
               </div>
               <div className="flex items-center gap-4">
-                <div className="relative">
-                  <select
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
-                    className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="quarter">This Quarter</option>
-                    <option value="year">This Year</option>
-                    <option value="all">All Time</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                </div>
+             
               </div>
             </div>
           </div>

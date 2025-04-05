@@ -354,6 +354,18 @@ setStats({
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+ {/* Total Users */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total_users}</p>
+              </div>
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </div>
           {/* Total Sellers */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
@@ -491,9 +503,7 @@ setStats({
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Category
-                  </th>
+                 
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Seller
                   </th>
@@ -521,9 +531,7 @@ setStats({
                           <div className="text-sm font-medium text-gray-900 dark:text-white">{product.name}</div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {product.category || "Uncategorized"}
-                      </td>
+                     
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                         {product.seller.name}
                       </td>

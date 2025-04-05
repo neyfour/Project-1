@@ -1,9 +1,17 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
-import { Bell, X, CheckCircle, Clock, User, Check, ShoppingBag, AlertCircle } from "lucide-react"
+import { Bell, CheckCircle, Clock, User, Check, ShoppingBag, AlertCircle, Trash2 } from "lucide-react"
 import { useStore } from "../store"
-import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "../api/notificationApi"
+import {
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  deleteAllNotifications,
+} from "../api/notificationApi"
 import toast from "react-hot-toast"
 import { useNavigate } from "react-router-dom"
 
@@ -134,6 +142,33 @@ export default function NotificationCenter() {
     return null
   }
 
+  const handleDeleteNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await deleteNotification(id, token)
+
+      // Update local state
+      setNotifications((prev) => prev.filter((notification) => notification._id !== id))
+      toast.success("Notification deleted")
+    } catch (error) {
+      console.error("Error deleting notification:", error)
+      toast.error("Failed to delete notification")
+    }
+  }
+
+  const handleDeleteAllNotifications = async () => {
+    try {
+      await deleteAllNotifications(token)
+
+      // Update local state
+      setNotifications([])
+      toast.success("All notifications deleted")
+    } catch (error) {
+      console.error("Error deleting all notifications:", error)
+      toast.error("Failed to delete all notifications")
+    }
+  }
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -153,15 +188,26 @@ export default function NotificationCenter() {
         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h3 className="font-medium text-gray-900 dark:text-white">Notifications</h3>
-            {notifications.length > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center"
-              >
-                <Check className="w-4 h-4 mr-1" />
-                Mark all as read
-              </button>
-            )}
+            <div className="flex space-x-2">
+              {notifications.length > 0 && (
+                <>
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center"
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Mark all read
+                  </button>
+                  <button
+                    onClick={handleDeleteAllNotifications}
+                    className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Clear all
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
@@ -192,17 +238,27 @@ export default function NotificationCenter() {
                           </div>
                         </div>
                       </div>
-                      {!notification.read && (
+                      <div className="flex">
+                        {!notification.read && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMarkAsRead(notification._id)
+                            }}
+                            className="ml-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                            aria-label="Mark as read"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleMarkAsRead(notification._id)
-                          }}
-                          className="ml-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                          onClick={(e) => handleDeleteNotification(notification._id, e)}
+                          className="ml-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                          aria-label="Delete notification"
                         >
-                          <X className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 ))}
