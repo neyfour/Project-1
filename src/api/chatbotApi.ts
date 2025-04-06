@@ -149,15 +149,15 @@ export const getMockChatbotResponse = (userMessage: string): string => {
   }
 
   if (lowerCaseMessage.includes("contact") || lowerCaseMessage.includes("support")) {
-    return "You can reach our customer support team at support@matrixsports.com or by calling 1-800-MATRIX. Our support hours are Monday to Friday, 9 AM to 6 PM EST."
+    return "You can reach our customer support team at e.sportscompany.contact@gmail.com . Our support hours are Monday to Friday, 9 AM to 6 PM EST."
   }
 
   if (lowerCaseMessage.includes("seller") || lowerCaseMessage.includes("sell")) {
-    return "To become a seller on Matrix Marketplace, click on the 'Become a Seller' link and complete the application process. Our team will review your application within 2-3 business days."
+    return "To become a seller on E-SPORTS Store, click on the 'Become a Seller' link and complete the application process. Our team will review your application within 2-3 business days."
   }
 
   if (lowerCaseMessage.includes("payment") || lowerCaseMessage.includes("pay")) {
-    return "We accept all major credit cards, PayPal, and Apple Pay. Your payment information is securely processed and never stored on our servers."
+    return "We accept all major credit cards. Your payment information is securely processed and never stored on our servers."
   }
 
   if (lowerCaseMessage.includes("discount") || lowerCaseMessage.includes("coupon")) {

@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState, useEffect, useRef } from "react"
 import { MessageSquare, Send, User, RefreshCw, Circle, Trash2, Smile, X } from "lucide-react"
 import { useStore } from "../store"
@@ -11,7 +11,26 @@ import toast from "react-hot-toast"
 
 // Simple emoji picker data
 const commonEmojis = [
-  "😊", "👍", "❤️", "😂", "🙏", "😍", "👏", "🔥", "🎉", "😁", "💯", "⭐", "✅", "🤔", "👌", "😉", "🚀", "💪", "😎", "🙌",
+  "😊",
+  "👍",
+  "❤️",
+  "😂",
+  "🙏",
+  "😍",
+  "👏",
+  "🔥",
+  "🎉",
+  "😁",
+  "💯",
+  "⭐",
+  "✅",
+  "🤔",
+  "👌",
+  "😉",
+  "🚀",
+  "💪",
+  "😎",
+  "🙌",
 ]
 
 export default function SellerChat() {
@@ -391,6 +410,33 @@ export default function SellerChat() {
     })
   }
 
+  // Add this helper function after the formatLastActive function and before the loading check
+  const formatMessageDate = (timestamp: string) => {
+    const messageDate = new Date(timestamp)
+    const today = new Date()
+    const yesterday = new Date()
+
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    // Reset time part for date comparison
+    const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate())
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+
+    if (messageDateOnly.getTime() === todayOnly.getTime()) {
+      return "Today"
+    } else if (messageDateOnly.getTime() === yesterdayOnly.getTime()) {
+      return "Yesterday"
+    } else {
+      return messageDate.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex">
@@ -453,21 +499,7 @@ export default function SellerChat() {
                         </span>
 
                         {/* Online status indicator */}
-                        {activeAdmin.isOnline ? (
-                          <div className="flex items-center ml-2">
-                            <Circle className="w-2 h-2 fill-green-500 text-green-500 mr-1" />
-                            <span className="text-xs text-green-500">Active now</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center ml-2">
-                            <Circle className="w-2 h-2 fill-gray-400 text-gray-400 mr-1" />
-                            <span className="text-xs text-gray-400">
-                              {activeAdmin.lastActive
-                                ? `Active ${formatLastActive(activeAdmin.lastActive)}`
-                                : "Offline"}
-                            </span>
-                          </div>
-                        )}
+                      
                       </div>
                     </div>
                   </div>
@@ -516,50 +548,108 @@ export default function SellerChat() {
                       </div>
                     ) : (
                       messages.map((message, index) => {
-                        const isCurrentUser = message.sender_id === user?.id
-                        const showSenderInfo = index === 0 || messages[index - 1].sender_id !== message.sender_id
+                        // Enhanced sender identification logic
+                        const isCurrentUser =
+                          message.sender_id === user?.id ||
+                          message.sender_name?.toLowerCase() === user?.username?.toLowerCase() ||
+                          message.sender_id === "current_user" ||
+                          (!message.sender_id.includes("admin") &&
+                            !message.sender_name?.toLowerCase().includes("admin"))
+
+                        const isAdmin =
+                          message.sender_id.includes("admin") ||
+                          message.sender_name?.toLowerCase().includes("admin") ||
+                          message.sender_name?.toLowerCase() === "superadmin"
+
+                        // Final determination - if it's not an admin message, it's from the current user
+                        const isSentByMe = isCurrentUser && !isAdmin
+
+                        // Check if we should show sender info (avatar and name)
+                        const showSenderInfo =
+                          index === 0 ||
+                          messages[index - 1].sender_id !== message.sender_id ||
+                          messages[index - 1].sender_name !== message.sender_name
+
+                        // Check if we should show date header
+                        const showDateHeader =
+                          index === 0 ||
+                          new Date(message.timestamp).toDateString() !==
+                            new Date(messages[index - 1].timestamp).toDateString()
 
                         return (
-                          <div
-                            key={message.id}
-                            className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
-                            onContextMenu={(e) => handleMessageContextMenu(e, message.id)}
-                          >
-                            {/* Left side - Received messages */}
-                            {!isCurrentUser && (
-                              <div className="flex max-w-[70%]">
-                                {/* Avatar for other user */}
-                                {showSenderInfo && (
-                                  <div className="flex-shrink-0 mr-2 self-end">
-                                    {message.sender_avatar ? (
-                                      <img
-                                        src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
-                                        alt={message.sender_name}
-                                        className="w-8 h-8 rounded-full"
-                                      />
-                                    ) : (
-                                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                          <React.Fragment key={message.id}>
+                            {/* Date Header */}
+                            {showDateHeader && (
+                              <div className="flex justify-center my-4">
+                                <div className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium px-3 py-1 rounded-full">
+                                  {formatMessageDate(message.timestamp)}
+                                </div>
+                              </div>
+                            )}
 
-                                <div className={!showSenderInfo ? "ml-10" : ""}>
-                                  {/* Sender name */}
+                            <div
+                              className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
+                              onContextMenu={(e) => handleMessageContextMenu(e, message.id)}
+                            >
+                              {/* Left side - Received messages (from admin) */}
+                              {!isSentByMe && (
+                                <div className="flex max-w-[70%]">
+                                  {/* Avatar for admin */}
                                   {showSenderInfo && (
-                                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
-                                      {message.sender_name}
+                                    <div className="flex-shrink-0 mr-2 self-end">
+                                      {message.sender_avatar ? (
+                                        <img
+                                          src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
+                                          alt={message.sender_name}
+                                          className="w-8 h-8 rounded-full"
+                                        />
+                                      ) : (
+                                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                          <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                        </div>
+                                      )}
                                     </div>
                                   )}
 
-                                  {/* Message bubble - LEFT ALIGNED, LIGHT BACKGROUND */}
-                                  <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 rounded-t-lg rounded-r-lg rounded-bl-none shadow-sm relative group">
+                                  <div className={!showSenderInfo ? "ml-10" : ""}>
+                                    {/* Sender name */}
+                                    {showSenderInfo && (
+                                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
+                                        {message.sender_name || "Admin"}
+                                      </div>
+                                    )}
+
+                                    {/* Message bubble - LEFT ALIGNED, LIGHT BACKGROUND */}
+                                    <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 rounded-t-lg rounded-r-lg rounded-bl-none shadow-sm relative group">
+                                      <p className="whitespace-pre-wrap">{message.content}</p>
+
+                                      {/* Delete button on hover */}
+                                      <button
+                                        className="absolute right-0 top-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => handleDeleteMessage(message.id)}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+
+                                    {/* Timestamp */}
+                                    <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                                      {formatTime(message.timestamp)}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Right side - Sent messages (from current user) */}
+                              {isSentByMe && (
+                                <div className="max-w-[70%]">
+                                  {/* Message bubble - RIGHT ALIGNED, INDIGO BACKGROUND */}
+                                  <div className="bg-indigo-600 text-white px-3 py-2 rounded-t-lg rounded-l-lg rounded-br-none relative group">
                                     <p className="whitespace-pre-wrap">{message.content}</p>
 
                                     {/* Delete button on hover */}
                                     <button
-                                      className="absolute right-0 top-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      className="absolute left-0 top-0 -mt-2 -ml-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                       onClick={() => handleDeleteMessage(message.id)}
                                     >
                                       <X className="w-3 h-3" />
@@ -567,36 +657,13 @@ export default function SellerChat() {
                                   </div>
 
                                   {/* Timestamp */}
-                                  <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                                  <div className="text-xs mt-1 text-right text-gray-500 dark:text-gray-400">
                                     {formatTime(message.timestamp)}
                                   </div>
                                 </div>
-                              </div>
-                            )}
-
-                            {/* Right side - Sent messages */}
-                            {isCurrentUser && (
-                              <div className="max-w-[70%]">
-                                {/* Message bubble - RIGHT ALIGNED, INDIGO BACKGROUND */}
-                                <div className="bg-indigo-600 text-white px-3 py-2 rounded-t-lg rounded-l-lg rounded-br-none relative group">
-                                  <p className="whitespace-pre-wrap">{message.content}</p>
-
-                                  {/* Delete button on hover */}
-                                  <button
-                                    className="absolute left-0 top-0 -mt-2 -ml-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => handleDeleteMessage(message.id)}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-
-                                {/* Timestamp */}
-                                <div className="text-xs mt-1 text-right text-gray-500 dark:text-gray-400">
-                                  {formatTime(message.timestamp)}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          </React.Fragment>
                         )
                       })
                     )}
@@ -699,3 +766,4 @@ export default function SellerChat() {
     </div>
   )
 }
+

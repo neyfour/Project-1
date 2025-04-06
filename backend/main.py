@@ -51,7 +51,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "2ca83451c4cfa6b46d3826319fec5fc877c946cec7
 ALGORITHM = "HS256"
 
 # Import routers
-from routers import users, products, orders, notifications, chat, seller_applications, payments, seller_payouts, promotions, statistics, predictions, settings, sellerdashboard, sellerstatistic, sellerprediction, chatbot, superadmindashboard, sa_product, sellercommission
+from routers import users, products, orders, notifications, chat, seller_applications, payments, seller_payouts, promotions, statistics, predictions, settings, sellerdashboard, sellerstatistic, sellerprediction, chatbot, superadmindashboard, sa_product, sellercommission,review_api
 
 # Initialize WebSocket connection manager for chat
 class ConnectionManager:
@@ -136,6 +136,8 @@ app.include_router(superadmindashboard.router)
 # Super Admin Product Router
 app.include_router(sa_product.router, prefix="/sa_products", tags=["sa_product"])
 app.include_router(sellercommission.router, prefix="/sellercommissions", tags=["sellercommissions"])
+app.include_router(review_api.router, prefix="/reviews", tags=["reviews"])                                                        
+
 
 
 # WebSocket endpoint for chat

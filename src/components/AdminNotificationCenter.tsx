@@ -243,7 +243,7 @@ export default function AdminNotificationCenter() {
                         className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                         aria-label="Delete application"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

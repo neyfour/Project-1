@@ -46,6 +46,11 @@ export interface Product {
     avatar_url?: string
     rating: number
   }
+  reviews?: Review[]
+  discount_percent?: number
+  shipping_info?: string
+  warranty?: string
+  return_policy?: string
 }
 
 export interface ProductVariant {
@@ -70,6 +75,7 @@ export interface Review {
   user_name: string
   user_avatar?: string
   helpful_count: number
+  verified?: boolean
 }
 
 export interface Order {

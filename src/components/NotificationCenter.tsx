@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Bell, CheckCircle, Clock, User, Check, ShoppingBag, AlertCircle, Trash2 } from "lucide-react"
+import { Bell, CheckCircle, Clock, User, Check, ShoppingBag, AlertCircle, Trash2 ,X} from "lucide-react"
 import { useStore } from "../store"
 import {
   getNotifications,
@@ -256,7 +256,7 @@ export default function NotificationCenter() {
                           className="ml-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                           aria-label="Delete notification"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>

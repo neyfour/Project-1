@@ -1,11 +1,11 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState, useEffect, useRef } from "react"
 import { MessageSquare, Send, User, Search, RefreshCw, Circle, Trash2, Smile } from "lucide-react"
 import { useStore } from "../store"
 import SuperAdminSidebar from "../components/SuperAdminSidebar"
-import { getChatRooms, getChatMessages, sendChatMessage, markRoomAsRead } from "../api/chatApi"
+import { getChatRooms, getChatMessages, sendChatMessage, markRoomAsRead} from "../api/chatApi"
 import { getSellers } from "../api/authApi"
 import type { ChatRoom, ChatMessage } from "../types"
 import toast from "react-hot-toast"
@@ -464,6 +464,32 @@ export default function AdminChat() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
+  // Format date for message headers
+  const formatMessageDate = (timestamp: string) => {
+    const messageDate = new Date(timestamp)
+    const today = new Date()
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    // Reset time components to compare dates only
+    const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate())
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+
+    if (messageDateOnly.getTime() === todayOnly.getTime()) {
+      return "Today"
+    } else if (messageDateOnly.getTime() === yesterdayOnly.getTime()) {
+      return "Yesterday"
+    } else {
+      return messageDate.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    }
+  }
+
   // Format last active time
   const formatLastActive = (date: Date) => {
     if (!date) return "Offline"
@@ -559,20 +585,7 @@ export default function AdminChat() {
                         </span>
 
                         {/* Online status indicator */}
-                        {sellers.find((s) => s._id === activeSeller.id)?.isOnline ? (
-                          <div className="flex items-center ml-2">
-                            <Circle className="w-2 h-2 fill-green-500 text-green-500 mr-1" />
-                            <span className="text-xs text-green-500">Active now</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center ml-2">
-                            <span className="text-xs text-gray-400">
-                              {sellers.find((s) => s._id === activeSeller.id)?.lastActive
-                                ? formatLastActive(sellers.find((s) => s._id === activeSeller.id)?.lastActive)
-                                : "Offline"}
-                            </span>
-                          </div>
-                        )}
+                      
                       </div>
                     </div>
                   </div>
@@ -654,23 +667,13 @@ export default function AdminChat() {
                           )}
 
                           {/* Online status indicator dot */}
-                          <div
-                            className={`absolute bottom-0 right-2 w-3 h-3 rounded-full border-2 border-white dark:border-gray-850 ${
-                              seller.isOnline ? "bg-green-500" : "bg-gray-400"
-                            }`}
-                          ></div>
+                         
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{seller.username || seller.full_name || "Seller"}</div>
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {seller.isOnline ? (
-                                <span className="text-green-500">Active now</span>
-                              ) : (
-                                <span>{formatLastActive(seller.lastActive)}</span>
-                              )}
-                            </div>
+                            
 
                             {/* Show unread count if any */}
                             {chatRooms.find((r) => r.partner?.id === seller._id)?.unread_count > 0 && (
@@ -720,69 +723,86 @@ export default function AdminChat() {
                           new Date(messages[index + 1]?.timestamp).getTime() - new Date(message.timestamp).getTime() >
                             5 * 60 * 1000
 
-                        return (
-                          <div
-                            key={message.id}
-                            className="flex"
-                            onContextMenu={(e) => handleMessageContextMenu(e, message.id)}
-                          >
-                            <div className={`flex max-w-[70%] ${isCurrentUser ? "ml-auto" : ""}`}>
-                              {/* Avatar - only shown for received messages and first in group */}
-                              {!isCurrentUser && showSenderInfo && (
-                                <div className="flex-shrink-0 mr-2 self-end">
-                                  {message.sender_avatar ? (
-                                    <img
-                                      src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
-                                      alt={message.sender_name}
-                                      className="w-8 h-8 rounded-full"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                      <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                        // Determine if we should show a date header
+                        const showDateHeader =
+                          index === 0 ||
+                          (index > 0 &&
+                            new Date(message.timestamp).toDateString() !==
+                              new Date(messages[index - 1].timestamp).toDateString())
 
-                              <div className={`${!isCurrentUser && !showSenderInfo ? "ml-10" : ""}`}>
-                                {/* Sender name - only show for received messages and first in group */}
+                        return (
+                          <React.Fragment key={message.id}>
+                            {/* Date header */}
+                            {showDateHeader && (
+                              <div className="flex justify-center my-4">
+                                <div className="bg-gray-100 dark:bg-gray-700 px-4 py-1 rounded-full text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                  {formatMessageDate(message.timestamp)}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Message */}
+                            <div className="flex" onContextMenu={(e) => handleMessageContextMenu(e, message.id)}>
+                              <div className={`flex max-w-[70%] ${isCurrentUser ? "ml-auto" : ""}`}>
+                                {/* Avatar - only shown for received messages and first in group */}
                                 {!isCurrentUser && showSenderInfo && (
-                                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
-                                    {message.sender_name}
+                                  <div className="flex-shrink-0 mr-2 self-end">
+                                    {message.sender_avatar ? (
+                                      <img
+                                        src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
+                                        alt={message.sender_name}
+                                        className="w-8 h-8 rounded-full"
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
-                                {/* Message bubble */}
-                                <div
-                                  className={`relative px-3 py-2 rounded-2xl shadow-sm ${
-                                    isCurrentUser
-                                      ? "bg-indigo-500 text-white rounded-tr-none"
-                                      : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-tl-none"
-                                  }`}
-                                >
-                                  <p className="whitespace-pre-wrap">{message.content}</p>
-
-                                  {/* Tail for the message bubble */}
-                                  <div
-                                    className={`absolute bottom-0 w-3 h-3 transform rotate-45 ${
-                                      isCurrentUser ? "-right-1.5 bg-indigo-500" : "-left-1.5 bg-white dark:bg-gray-700"
-                                    }`}
-                                  ></div>
-
-                                  {/* Timestamp */}
-                                  {showTimestamp && (
-                                    <div
-                                      className={`text-xs mt-1 ${
-                                        isCurrentUser ? "text-indigo-100" : "text-gray-500 dark:text-gray-400"
-                                      }`}
-                                    >
-                                      {formatTime(message.timestamp)}
+                                <div className={`${!isCurrentUser && !showSenderInfo ? "ml-10" : ""}`}>
+                                  {/* Sender name - only show for received messages and first in group */}
+                                  {!isCurrentUser && showSenderInfo && (
+                                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
+                                      {message.sender_name}
                                     </div>
                                   )}
+
+                                  {/* Message bubble */}
+                                  <div
+                                    className={`relative px-3 py-2 rounded-2xl shadow-sm ${
+                                      isCurrentUser
+                                        ? "bg-indigo-500 text-white rounded-tr-none"
+                                        : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-tl-none"
+                                    }`}
+                                  >
+                                    <p className="whitespace-pre-wrap">{message.content}</p>
+
+                                    {/* Tail for the message bubble */}
+                                    <div
+                                      className={`absolute bottom-0 w-3 h-3 transform rotate-45 ${
+                                        isCurrentUser
+                                          ? "-right-1.5 bg-indigo-500"
+                                          : "-left-1.5 bg-white dark:bg-gray-700"
+                                      }`}
+                                    ></div>
+
+                                    {/* Timestamp */}
+                                    {showTimestamp && (
+                                      <div
+                                        className={`text-xs mt-1 ${
+                                          isCurrentUser ? "text-indigo-100" : "text-gray-500 dark:text-gray-400"
+                                        }`}
+                                      >
+                                        {formatTime(message.timestamp)}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </React.Fragment>
                         )
                       })
                     )}

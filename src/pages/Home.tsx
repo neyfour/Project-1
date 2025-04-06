@@ -7,7 +7,9 @@ import LazyImage from "../components/LazyImage"
 import ProductPreviewModal from "../components/ProductPreviewModal"
 import ProductCard from "../components/ProductCard"
 import { getProducts } from "../api/productApi"
+
 import "../styles/Home.css"
+
 
 
 export default function Home() {
@@ -76,7 +78,7 @@ export default function Home() {
     if (user) {
       if (user.role === "seller") {
         navigate("/seller/dashboard")
-      } else if (user.role === "superadmin" || user.role === "admin") {
+      } else if (user.role === "superadmin" ) {
         navigate("/matrix")
       } else if (user.seller_application) {
         // If they've already applied
@@ -85,7 +87,7 @@ export default function Home() {
         navigate("/become-seller")
       }
     } else {
-      navigate("/auth")
+    alert("Please sign in to continue");
     }
   }
 
@@ -104,7 +106,7 @@ export default function Home() {
       <section className="hero-section">
         <div className="absolute inset-0 bg-black/40 z-10" />
         <img
-          src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=2000"
+          src="https://img.freepik.com/free-photo/view-gym-room-training-sports_23-2151699494.jpg?uid=R186796868&ga=GA1.1.1852284681.1743187124&w=740"
           alt="Hero"
           className="absolute inset-0 w-full h-full object-cover hero-image"
         />

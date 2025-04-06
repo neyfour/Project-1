@@ -1,6 +1,7 @@
 import { api } from "../config/db"
 import type { Product } from "../types"
 import { useStore } from "../store"
+import { getProductReviews } from "./reviewApi"
 
 // Get all products with optional filters
 export const getProducts = async (filters = {}, fetchAll = false) => {
@@ -81,7 +82,31 @@ export const getProductById = async (productId: string) => {
       throw new Error(errorData.detail || "Failed to get product")
     }
 
-    return await response.json()
+    const product = await response.json()
+
+    // Fetch reviews for the product
+    try {
+      const reviews = await getProductReviews(productId)
+
+      // Calculate average rating and reviews count
+      if (reviews && reviews.length > 0) {
+        const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
+        const averageRating = totalRating / reviews.length
+
+        // Attach reviews and updated rating to the product object
+        return {
+          ...product,
+          reviews,
+          reviews_count: reviews.length,
+          rating: averageRating || product.rating || 0,
+        }
+      }
+
+      return { ...product, reviews: reviews || [] }
+    } catch (reviewsError) {
+      console.warn("Error fetching reviews for product:", productId, reviewsError)
+      return { ...product, reviews: [] }
+    }
   } catch (error) {
     console.error("Error getting product:", error)
     throw error
@@ -123,6 +148,9 @@ export const createProduct = async (productData: any, token: string) => {
       brand: productData.brand || "",
       variants: Array.isArray(productData.variants) ? productData.variants : [],
       specifications: productData.specifications || {},
+      shipping_info: productData.shipping_info || "Free shipping on orders over $100",
+      warranty: productData.warranty || "2 year warranty",
+      return_policy: productData.return_policy || "30 day returns",
     }
 
     // Send request to the correct endpoint without /api
@@ -170,6 +198,9 @@ export const updateProduct = async (productId: string, productData: any, token: 
       brand: productData.brand || "",
       variants: Array.isArray(productData.variants) ? productData.variants : [],
       specifications: productData.specifications || {},
+      shipping_info: productData.shipping_info || "Free shipping on orders over $100",
+      warranty: productData.warranty || "2 year warranty",
+      return_policy: productData.return_policy || "30 day returns",
     }
 
     // Use api.url and api.getHeaders for consistency
@@ -278,6 +309,9 @@ export const getMockProducts = (category?: string): Product[] => {
       sku: "SC-BL-001",
       brand: "GoalMaster",
       created_at: "2023-04-12T00:00:00Z",
+      shipping_info: "Free shipping on orders over $50",
+      warranty: "1 year warranty",
+      return_policy: "30 day returns",
     },
     // Additional mock products would be here
   ]
@@ -295,5 +329,25 @@ export const getMockProducts = (category?: string): Product[] => {
 
   // Otherwise return all products
   return processedProducts
+}
+
+// Search products
+export const searchProducts = async (searchQuery: string, token: string): Promise<Product[]> => {
+  try {
+    const response = await fetch(`${api.url}/products/search?q=${searchQuery}`, {
+      method: "GET",
+      headers: api.getHeaders(token),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to search products: ${response.status} - ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error("Error searching products:", error)
+    throw error
+  }
 }
 

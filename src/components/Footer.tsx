@@ -23,10 +23,14 @@ export default function Footer() {
           {/* Company Info */}
           <div>
             <div className="flex items-center space-x-3 mb-6">
-              <Store className="w-8 h-8 text-indigo-400" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-indigo-300 text-transparent bg-clip-text">
-                Matrix Commerce
-              </span>
+              <img 
+                           src="/logo.png"
+                           alt="Matrix Commerce Logo" 
+                           className="w-auto h-16 opacity-100 dark:opacity-90" 
+                           />
+                       <span className="text-2xl font-bold dark:text-gray-200 text-purple-800">
+                       E-SPORTS
+                       </span>
             </div>
             <p className="text-gray-400 mb-6">
               Your premier destination for high-quality sports equipment and gear. Empowering athletes and sports
@@ -35,15 +39,15 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-indigo-400" />
-                <span className="text-gray-300">support@matrixcommerce.com</span>
+                <span className="text-gray-300">e.sportscompany.contact@gmail.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-indigo-400" />
-                <span className="text-gray-300">+1 (555) 123-4567</span>
+                <span className="text-gray-300">+212 5 37 77 77 77</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-5 h-5 text-indigo-400" />
-                <span className="text-gray-300">123 Sports Avenue, Athletic City, CA 90210</span>
+                <span className="text-gray-300">Avenue Mohamed V, Rabat, Maroc</span>
               </div>
             </div>
           </div>
@@ -67,11 +71,7 @@ export default function Footer() {
                   Categories
                 </Link>
               </li>
-              <li>
-                <Link to="/promotions" className="text-gray-400 hover:text-indigo-400 transition-colors">
-                  Promotions
-                </Link>
-              </li>
+             
               <li>
                 <Link to="/become-seller" className="text-gray-400 hover:text-indigo-400 transition-colors">
                   Become a Seller
@@ -82,11 +82,7 @@ export default function Footer() {
                   Contact Us
                 </Link>
               </li>
-              <li>
-                <Link to="/forum" className="text-gray-400 hover:text-indigo-400 transition-colors">
-                  Community Forum
-                </Link>
-              </li>
+             
             </ul>
           </div>
 
@@ -190,7 +186,7 @@ export default function Footer() {
                   className="h-6"
                 />
                 <img src="https://cdn-icons-png.flaticon.com/512/11378/11378185.png" alt="Mastercard" className="h-6" />
-                <img src="https://cdn-icons-png.flaticon.com/512/12942/12942189.png" alt="PayPal" className="h-6" />
+               
               </div>
             </div>
             <div className="flex flex-col items-center">
@@ -214,7 +210,7 @@ export default function Footer() {
         {/* Bottom Footer */}
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-center items-center">
           <p className="text-gray-500 text-sm mb-4 md:mb-0">
-            © {new Date().getFullYear()} Matrix Commerce. All rights reserved.
+            © {new Date().getFullYear()} E-SPORTS. All rights reserved.
           </p>
         </div>
       </div>

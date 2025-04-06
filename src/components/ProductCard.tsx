@@ -86,7 +86,8 @@ export default function ProductCard({ product, featured, popular, onQuickView }:
     }
 
     addToWishlist(product)
-    // Update the local state immediately
+
+    // Update state
     setIsInWishlistState(true)
     setShowFeedback("Added to wishlist")
   }
@@ -107,7 +108,7 @@ export default function ProductCard({ product, featured, popular, onQuickView }:
         </div>
       )}
 
-      <Link to={`/products/${product.id}`} className="block">
+      <Link to={`/product-details/${product.id}`} className="block">
         <div className="relative h-56 overflow-hidden">
           <LazyImage
             src={product.image_url || placeholderSrc}

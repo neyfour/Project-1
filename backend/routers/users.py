@@ -64,6 +64,10 @@ class SuspendUser(BaseModel):
     suspended_until: Optional[str] = None
     reason: Optional[str] = None
 
+class PasswordReset(BaseModel):
+    email: EmailStr
+    new_password: str
+
 # Helper functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -663,4 +667,34 @@ async def unsuspend_user(
     db.notifications.insert_one(notification)
     
     return {"message": "User unsuspended successfully"}
+
+
+@router.post("/reset-password")
+async def reset_password(reset_data: PasswordReset):
+    # Check if user exists
+    user = db.users.find_one({"email": reset_data.email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email not found"
+        )
+    
+    # Hash the new password
+    hashed_password = get_password_hash(reset_data.new_password)
+    
+    # Update the user's password
+    result = db.users.update_one(
+        {"email": reset_data.email},
+        {"$set": {"hashed_password": hashed_password}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update password"
+        )
+    
+    return {"message": "Password has been reset successfully"}
+
+
 

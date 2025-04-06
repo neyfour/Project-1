@@ -25,15 +25,15 @@ export default function Contact() {
     setIsSubmitting(true)
 
     emailjs.send(
-      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-      process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
-      {
-        from_name: formData.name,
-        from_email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
-      },
-      process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
+      'service_61ah45s', // Replace with actual service ID
+        'template_ea9kxwv', // Replace with actual template ID
+        {
+          from_name: formData.name,
+          from_email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+        },
+        'Q5xQ8hU7Av4oHnsKw' // Replace with actual public key
     )
     .then(() => {
       toast.success("Votre message a été envoyé avec succès !")
@@ -91,7 +91,7 @@ export default function Contact() {
                   <Mail className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Email</h3>
-                    <p className="text-gray-600 dark:text-gray-400">contact@matrixcommerce.com</p>
+                    <p className="text-gray-600 dark:text-gray-400">e.sportscompany.contact@gmail.com</p>
                   </div>
                 </div>
               </div>

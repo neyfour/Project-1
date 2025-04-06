@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useMemo } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Store, Search, ShoppingBag, Phone, Heart, Menu, X } from "lucide-react"
+import { Search, ShoppingBag, Phone, Heart, Menu, X } from "lucide-react"
 import { useStore } from "../store"
 import ThemeToggle from "./ThemeToggle"
 import AuthModal from "./AuthModal"
@@ -72,7 +72,7 @@ export default function Navbar() {
     return location.pathname === path
   }
 
-  const isDashboardPage = location.pathname.startsWith("/matrix/admin")
+  const isDashboardPage = location.pathname.startsWith("/matrix")
 
   return (
     <>
@@ -86,10 +86,14 @@ export default function Navbar() {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center h-20">
             <Link to="/" className="flex items-center space-x-3">
-              <Store className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 text-transparent bg-clip-text">
-                e-Sports
-              </span>
+              <img 
+              src={useStore((state) => state.theme) === 'dark' ? "/logo2.png" : "/logo.png"} 
+              alt="Matrix Commerce Logo" 
+              className="w-auto h-16 opacity-100 dark:opacity-90" 
+              />
+          <span className="text-2xl font-bold dark:text-gray-200 text-purple-800">
+          E-SPORTS
+          </span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -214,7 +218,7 @@ export default function Navbar() {
                   <>
                     {user.role === "admin" && (
                       <Link
-                        to="/matrix/admin"
+                        to="/matrix"
                         className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                       >
                         Dashboard

@@ -12,7 +12,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
-      text: "Hello! I'm Matrix Assistant. How can I help you with our sports equipment marketplace today?",
+      text: "Hello! I'm Alex your Assistant. How can I help you with our sports equipment marketplace today?",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -126,7 +126,7 @@ export default function Chatbot() {
           <div className="bg-indigo-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Bot className="w-5 h-5" />
-              <h3 className="font-medium">Matrix Assistant</h3>
+              <h3 className="font-medium">Alex Assistant</h3>
             </div>
             <button
               onClick={toggleChat}
@@ -153,7 +153,7 @@ export default function Chatbot() {
                 >
                   <div className="flex items-center space-x-2 mb-1">
                     {message.sender === "bot" ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                    <span className="text-xs opacity-75">{message.sender === "bot" ? "Matrix Assistant" : "You"}</span>
+                    <span className="text-xs opacity-75">{message.sender === "bot" ? "Alex" : "You"}</span>
                   </div>
                   <p className="whitespace-pre-wrap">{message.text}</p>
                   <span className="text-xs opacity-75 block text-right mt-1">
@@ -167,7 +167,7 @@ export default function Chatbot() {
                 <div className="bg-gray-200 dark:bg-gray-700 rounded-lg p-3 rounded-tl-none max-w-[80%]">
                   <div className="flex items-center space-x-2">
                     <Bot className="w-4 h-4" />
-                    <span className="text-xs opacity-75">Matrix Assistant</span>
+                    <span className="text-xs opacity-75">Alex</span>
                   </div>
                   <div className="flex items-center space-x-2 mt-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
