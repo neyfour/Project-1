@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { MessageSquare, Send, User, Search, RefreshCw, Circle, Trash2, Smile, X } from "lucide-react"
+import { MessageSquare, Send, User, Search, RefreshCw, Circle, Trash2, Smile } from "lucide-react"
 import { useStore } from "../store"
 import SuperAdminSidebar from "../components/SuperAdminSidebar"
 import { getChatRooms, getChatMessages, sendChatMessage, markRoomAsRead } from "../api/chatApi"
@@ -12,7 +12,26 @@ import toast from "react-hot-toast"
 
 // Simple emoji picker data
 const commonEmojis = [
-  "😊", "👍", "❤️", "😂", "🙏", "😍", "👏", "🔥", "🎉", "😁", "💯", "⭐", "✅", "🤔", "👌", "😉", "🚀", "💪", "😎", "🙌",
+  "😊",
+  "👍",
+  "❤️",
+  "😂",
+  "🙏",
+  "😍",
+  "👏",
+  "🔥",
+  "🎉",
+  "😁",
+  "💯",
+  "⭐",
+  "✅",
+  "🤔",
+  "👌",
+  "😉",
+  "🚀",
+  "💪",
+  "😎",
+  "🙌",
 ]
 
 export default function AdminChat() {
@@ -168,6 +187,41 @@ export default function AdminChat() {
     }
   }
 
+  // Fetch messages for the active room
+  const fetchMessages = async () => {
+    if (!activeRoom || !token) return
+
+    try {
+      const roomMessages = await getChatMessages(activeRoom, token)
+
+      if (roomMessages && roomMessages.length >= 0) {
+        const processedMessages = roomMessages.map((message) => {
+          // Check if this message is from the current user (SuperAdmin)
+          // This is the critical part that needs fixing
+          const isFromCurrentUser =
+            message.sender_id === user?.id ||
+            message.sender_id === "current_user" ||
+            message.sender_name === "SuperAdmin" ||
+            (user?.role === "superadmin" && message.sender_role === "superadmin")
+
+          return {
+            ...message,
+            sender_id: isFromCurrentUser ? user?.id : message.sender_id,
+            sender_name: isFromCurrentUser
+              ? user?.role === "superadmin"
+                ? "SuperAdmin"
+                : user?.username || "You"
+              : message.sender_name,
+          }
+        })
+
+        setMessages(processedMessages)
+      }
+    } catch (error) {
+      console.error(`Error fetching messages for room ${activeRoom}:`, error)
+    }
+  }
+
   // Fetch messages when active room changes
   useEffect(() => {
     const fetchMessagesWrapper = async () => {
@@ -264,15 +318,22 @@ export default function AdminChat() {
         .then((roomMessages) => {
           if (roomMessages && roomMessages.length >= 0) {
             const processedMessages = roomMessages.map((message) => {
-              if (message.sender_id === "current_user") {
-                return {
-                  ...message,
-                  sender_id: user?.id || message.sender_id,
-                  sender_name:
-                    user?.role === "superadmin" ? "SuperAdmin" : user?.username || message.sender_name || "You",
-                }
+              // More robust check for current user messages
+              const isFromCurrentUser =
+                message.sender_id === user?.id ||
+                message.sender_id === "current_user" ||
+                message.sender_name === "SuperAdmin" ||
+                (user?.role === "superadmin" && message.sender_role === "superadmin")
+
+              return {
+                ...message,
+                sender_id: isFromCurrentUser ? user?.id : message.sender_id,
+                sender_name: isFromCurrentUser
+                  ? user?.role === "superadmin"
+                    ? "SuperAdmin"
+                    : user?.username || "You"
+                  : message.sender_name,
               }
-              return message
             })
 
             setMessages(processedMessages)
@@ -637,7 +698,7 @@ export default function AdminChat() {
               <>
                 {/* Messages */}
                 <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {messages.length === 0 ? (
                       <div className="text-center py-8">
                         <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -646,82 +707,81 @@ export default function AdminChat() {
                       </div>
                     ) : (
                       messages.map((message, index) => {
-                        const isCurrentUser = message.sender_id === user?.id
+                        // More robust check for current user messages
+                        const isCurrentUser =
+                          message.sender_id === user?.id ||
+                          message.sender_name === "SuperAdmin" ||
+                          message.sender_name === user?.username ||
+                          (user?.role === "superadmin" && message.sender_role === "superadmin")
+
                         const showSenderInfo = index === 0 || messages[index - 1].sender_id !== message.sender_id
-                        const showTimestamp = index === messages.length - 1 || 
-                          new Date(messages[index + 1]?.timestamp).getTime() - new Date(message.timestamp).getTime() > 5 * 60 * 1000
+                        const showTimestamp =
+                          index === messages.length - 1 ||
+                          new Date(messages[index + 1]?.timestamp).getTime() - new Date(message.timestamp).getTime() >
+                            5 * 60 * 1000
 
                         return (
                           <div
                             key={message.id}
-                            className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
+                            className="flex"
                             onContextMenu={(e) => handleMessageContextMenu(e, message.id)}
                           >
-                            {/* Left side - Received messages */}
-                            {!isCurrentUser && (
-                              <div className="flex max-w-[70%]">
-                                {/* Avatar for other user - only show on first message in a group */}
-                                {showSenderInfo && (
-                                  <div className="flex-shrink-0 mr-2 self-end">
-                                    {message.sender_avatar ? (
-                                      <img
-                                        src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
-                                        alt={message.sender_name}
-                                        className="w-8 h-8 rounded-full"
-                                      />
-                                    ) : (
-                                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                      </div>
-                                    )}
+                            <div className={`flex max-w-[70%] ${isCurrentUser ? "ml-auto" : ""}`}>
+                              {/* Avatar - only shown for received messages and first in group */}
+                              {!isCurrentUser && showSenderInfo && (
+                                <div className="flex-shrink-0 mr-2 self-end">
+                                  {message.sender_avatar ? (
+                                    <img
+                                      src={message.sender_avatar || "/placeholder.svg?height=28&width=28"}
+                                      alt={message.sender_name}
+                                      className="w-8 h-8 rounded-full"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                      <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className={`${!isCurrentUser && !showSenderInfo ? "ml-10" : ""}`}>
+                                {/* Sender name - only show for received messages and first in group */}
+                                {!isCurrentUser && showSenderInfo && (
+                                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
+                                    {message.sender_name}
                                   </div>
                                 )}
 
-                                <div className={!showSenderInfo ? "ml-10" : ""}>
-                                  {/* Sender name - only show on first message in a group */}
-                                  {showSenderInfo && (
-                                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1 mb-1">
-                                      {message.sender_name}
-                                    </div>
-                                  )}
-
-                                  {/* Message bubble - LEFT ALIGNED, LIGHT BACKGROUND */}
-                                  <div className="relative bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 rounded-2xl rounded-tl-none shadow-sm">
-                                    <p className="whitespace-pre-wrap">{message.content}</p>
-
-                                    {/* Tail for the message bubble */}
-                                    <div className="absolute -left-1.5 bottom-0 w-3 h-3 bg-white dark:bg-gray-700 transform rotate-45"></div>
-
-                                    {/* Timestamp - only show for last message or if there's a time gap */}
-                                    {showTimestamp && (
-                                      <div className="text-xs mt-1 text-gray-500 dark:text-gray-400">
-                                        {formatTime(message.timestamp)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Right side - Sent messages */}
-                            {isCurrentUser && (
-                              <div className="max-w-[70%]">
-                                {/* Message bubble - RIGHT ALIGNED, PURPLE BACKGROUND */}
-                                <div className="relative bg-indigo-500 text-white px-3 py-2 rounded-2xl rounded-tr-none shadow-sm">
+                                {/* Message bubble */}
+                                <div
+                                  className={`relative px-3 py-2 rounded-2xl shadow-sm ${
+                                    isCurrentUser
+                                      ? "bg-indigo-500 text-white rounded-tr-none"
+                                      : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-tl-none"
+                                  }`}
+                                >
                                   <p className="whitespace-pre-wrap">{message.content}</p>
 
                                   {/* Tail for the message bubble */}
-                                  <div className="absolute -right-1.5 bottom-0 w-3 h-3 bg-indigo-500 transform rotate-45"></div>
+                                  <div
+                                    className={`absolute bottom-0 w-3 h-3 transform rotate-45 ${
+                                      isCurrentUser ? "-right-1.5 bg-indigo-500" : "-left-1.5 bg-white dark:bg-gray-700"
+                                    }`}
+                                  ></div>
 
-                                  {/* Timestamp - only show for last message or if there's a time gap */}
+                                  {/* Timestamp */}
                                   {showTimestamp && (
-                                    <div className="text-xs mt-1 text-indigo-100">
+                                    <div
+                                      className={`text-xs mt-1 ${
+                                        isCurrentUser ? "text-indigo-100" : "text-gray-500 dark:text-gray-400"
+                                      }`}
+                                    >
                                       {formatTime(message.timestamp)}
                                     </div>
                                   )}
                                 </div>
                               </div>
-                            )}
+                            </div>
                           </div>
                         )
                       })
@@ -817,3 +877,4 @@ export default function AdminChat() {
     </div>
   )
 }
+

@@ -164,3 +164,63 @@ async def create_notification(
     
     return notification
 
+# New endpoint to delete a specific notification
+@router.delete("/{notification_id}", response_model=Dict[str, str])
+async def delete_notification(
+    notification_id: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    # Get notification
+    notification = db.notifications.find_one({"_id": ObjectId(notification_id)})
+    
+    if not notification:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification not found"
+        )
+    
+    # Check if user has permission to delete this notification
+    if (notification["user_id"] and 
+        str(notification["user_id"]) != str(current_user["_id"]) and 
+        current_user["role"] != "superadmin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this notification"
+        )
+    
+    # Delete notification
+    result = db.notifications.delete_one({"_id": ObjectId(notification_id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification not found or already deleted"
+        )
+    
+    return {"message": "Notification deleted successfully"}
+
+# New endpoint to delete all notifications for a user
+@router.delete("/", response_model=Dict[str, Any])
+async def delete_all_notifications(
+    current_user: dict = Depends(get_current_active_user)
+):
+    # Build query
+    query = {"user_id": str(current_user["_id"])}
+    
+    # For superadmin, also delete notifications with user_id = None if they want
+    if current_user["role"] == "superadmin":
+        query = {
+            "$or": [
+                {"user_id": str(current_user["_id"])},
+                {"user_id": None}
+            ]
+        }
+    
+    # Delete all notifications for the user
+    result = db.notifications.delete_many(query)
+    
+    return {
+        "message": "All notifications deleted successfully",
+        "deleted_count": result.deleted_count
+    }
+
