@@ -12,8 +12,8 @@ import SellerPredictionsPage from "./pages/SellerPredictionsPage"
 import SellerStatisticsPage from "./pages/SellerStatisticsPage"
 import ProductsPage from "./pages/ProductsPage"
 import OrdersPage from "./pages/OrdersPage"
-import PredictionsPage from "./pages/PredictionsPage"
-import StatisticsPage from "./pages/StatisticsPage"
+
+
 import ProductAnalytics from "./pages/ProductAnalytics"
 import Categories from "./pages/Categories"
 import CategoryProducts from "./pages/CategoryProducts"
