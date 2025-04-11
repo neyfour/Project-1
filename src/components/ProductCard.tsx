@@ -7,6 +7,7 @@ import { Star, ShoppingCart, Heart, Eye } from "lucide-react"
 import LazyImage from "./LazyImage"
 import { useStore } from "../store"
 import type { Product } from "../types"
+import { getProductReviews } from "../api/reviewApi"
 
 interface ProductCardProps {
   product: Product
@@ -20,6 +21,7 @@ export default function ProductCard({ product, featured, popular, onQuickView }:
   const [isInWishlistState, setIsInWishlistState] = useState(false)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [showFeedback, setShowFeedback] = useState<string | null>(null)
+  const [reviews, setReviews] = useState<any[]>([])
 
   const placeholderSrc = "/placeholder.svg?height=300&width=400"
 
@@ -46,6 +48,35 @@ export default function ProductCard({ product, featured, popular, onQuickView }:
       return () => clearTimeout(timer)
     }
   }, [showFeedback])
+
+  useEffect(() => {
+    // Fetch reviews for this product if it has an ID
+    const fetchProductReviews = async () => {
+      if (product && product.id) {
+        try {
+          const fetchedReviews = await getProductReviews(product.id)
+          setReviews(fetchedReviews)
+
+          // Calculate average rating
+          if (fetchedReviews && fetchedReviews.length > 0) {
+            const totalRating = fetchedReviews.reduce((sum, review) => sum + review.rating, 0)
+            const avgRating = totalRating / fetchedReviews.length
+
+            // Update the product with the calculated rating and review count
+            product.rating = avgRating
+            product.reviews_count = fetchedReviews.length
+          }
+        } catch (error) {
+          console.error(`Error fetching reviews for product ${product.id}:`, error)
+        }
+      }
+    }
+
+    // Only fetch if the product doesn't already have reviews data
+    if (product && product.id && (product.reviews_count === undefined || product.rating === undefined)) {
+      fetchProductReviews()
+    }
+  }, [product])
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -177,8 +208,19 @@ export default function ProductCard({ product, featured, popular, onQuickView }:
               {product.title || "Product"}
             </h3>
             <div className="flex items-center">
-              <Star size={16} className="fill-yellow-400 text-yellow-400" />
-              <span className="ml-1 text-sm text-gray-700 dark:text-gray-300">{product.rating || "4.5"}</span>
+              <Star
+                className={`w-4 h-4 ${product.rating > 0 || reviews.length > 0 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+              />
+              <span className="ml-1 text-sm text-gray-700 dark:text-gray-300">
+                {product.rating
+                  ? product.rating.toFixed(1)
+                  : reviews.length > 0
+                    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+                    : "0.0"}
+              </span>
+              <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                ({product.reviews_count !== undefined ? product.reviews_count : reviews.length})
+              </span>
             </div>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{product.brand || "Brand"}</p>
@@ -215,4 +257,3 @@ export default function ProductCard({ product, featured, popular, onQuickView }:
     </div>
   )
 }
-

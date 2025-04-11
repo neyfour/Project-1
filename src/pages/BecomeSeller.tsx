@@ -401,7 +401,7 @@ export default function BecomeSeller() {
           {/* Right Side - Benefits */}
           <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Why Sell on Matrix Commerce?</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Why Sell on E-SPORTS Store?</h2>
 
               <div className="space-y-4">
                 <div className="flex items-start">
@@ -475,7 +475,7 @@ export default function BecomeSeller() {
               <div className="space-y-4">
                 <div className="bg-indigo-700 rounded-lg p-4">
                   <p className="italic mb-2">
-                    "Joining Matrix Commerce transformed my small sports equipment business. Sales increased by 200% in
+                    "Joining  E-SPORTS Store transformed my small sports equipment business. Sales increased by 200% in
                     just 6 months!"
                   </p>
                   <p className="text-sm text-indigo-200">— Sarah J., Fitness Equipment Seller</p>

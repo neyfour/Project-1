@@ -5,6 +5,7 @@ import { X, Star, ShoppingCart, Heart, ChevronRight, ChevronLeft, Check } from "
 import LazyImage from "./LazyImage"
 import { useStore } from "../store"
 import type { Product } from "../types"
+import { getProductReviews } from "../api/reviewApi"
 
 interface ProductPreviewModalProps {
   product: Product
@@ -22,8 +23,18 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
   const [isInWishlistState, setIsInWishlistState] = useState(false)
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [showFeedback, setShowFeedback] = useState<string | null>(null)
+  const [productWithReviews, setProductWithReviews] = useState<Product>(product)
 
   const placeholderSrc = "/placeholder.svg?height=300&width=400"
+
+  // Calculate average rating
+  const calculateAverageRating = (reviews: any[]): number => {
+    if (!reviews || reviews.length === 0) {
+      return 0
+    }
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
+    return totalRating / reviews.length
+  }
 
   // Check if product is in wishlist
   useEffect(() => {
@@ -42,8 +53,33 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
       setSelectedSize(null)
       setIsAddedToCart(false)
       setShowFeedback(null)
+      setProductWithReviews(product)
+
+      // Ensure we have the latest review data
       if (product.id) {
         setIsInWishlistState(isInWishlist(product.id))
+
+        // Fetch the latest reviews
+        const fetchLatestReviews = async () => {
+          try {
+            const reviews = await getProductReviews(product.id)
+
+            // Calculate average rating
+            const avgRating = calculateAverageRating(reviews)
+
+            // Update the product with the latest reviews data
+            setProductWithReviews({
+              ...product,
+              reviews: reviews,
+              reviews_count: reviews.length,
+              rating: avgRating,
+            })
+          } catch (error) {
+            console.error("Error fetching latest reviews:", error)
+          }
+        }
+
+        fetchLatestReviews()
       }
     }
   }, [isOpen, product, isInWishlist])
@@ -187,7 +223,7 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
             <div className="relative aspect-square overflow-hidden rounded-lg mb-4">
               <LazyImage
                 src={displayImages[selectedImage]}
-                alt={product.title || "Product"}
+                alt={productWithReviews.title || "Product"}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.src = placeholderSrc
@@ -214,9 +250,9 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
               )}
 
               {/* Discount badge */}
-              {product.discount_percent > 0 && (
+              {productWithReviews.discount_percent > 0 && (
                 <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                  {product.discount_percent}% OFF
+                  {productWithReviews.discount_percent}% OFF
                 </div>
               )}
             </div>
@@ -234,7 +270,7 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
                   >
                     <LazyImage
                       src={img}
-                      alt={`${product.title || "Product"} - view ${index + 1}`}
+                      alt={`${productWithReviews.title || "Product"} - view ${index + 1}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.currentTarget.src = placeholderSrc
@@ -253,37 +289,47 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm font-medium capitalize">
-                    {product.category || "Category"}
+                    {productWithReviews.category || "Category"}
                   </span>
                   <div className="flex items-center">
-                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                    <Star
+                      className={`w-5 h-5 ${productWithReviews.rating > 0 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                    />
                     <span className="ml-1 text-gray-700 dark:text-gray-300 font-medium">
-                      {product.rating?.toFixed(1) || "4.5"}
+                      {productWithReviews.rating ? productWithReviews.rating.toFixed(1) : "0.0"}
                     </span>
                     <span className="mx-1 text-gray-400">•</span>
-                    <span className="text-gray-500 dark:text-gray-400">{product.reviews_count || 0} reviews</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {productWithReviews.reviews_count || 0} reviews
+                    </span>
                   </div>
                 </div>
 
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{product.title || "Product"}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  {productWithReviews.title || "Product"}
+                </h2>
 
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  {product.description || "No description available"}
+                  {productWithReviews.description || "No description available"}
                 </p>
 
                 <div className="flex items-baseline mb-4">
-                  {product.discount_percent > 0 ? (
+                  {productWithReviews.discount_percent > 0 ? (
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                        ${((product.price || 0) * (1 - (product.discount_percent || 0) / 100)).toFixed(2)}
+                        $
+                        {(
+                          (productWithReviews.price || 0) *
+                          (1 - (productWithReviews.discount_percent || 0) / 100)
+                        ).toFixed(2)}
                       </span>
                       <span className="text-lg text-gray-500 dark:text-gray-400 line-through">
-                        ${(product.price || 0).toFixed(2)}
+                        ${(productWithReviews.price || 0).toFixed(2)}
                       </span>
                     </div>
                   ) : (
                     <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                      ${(product.price || 0).toFixed(2)}
+                      ${(productWithReviews.price || 0).toFixed(2)}
                     </span>
                   )}
                 </div>
@@ -346,20 +392,20 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
                     <input
                       type="number"
                       min="1"
-                      max={product.stock || 10}
+                      max={productWithReviews.stock || 10}
                       value={quantity}
                       onChange={(e) => setQuantity(Number.parseInt(e.target.value) || 1)}
                       className="w-20 text-center border-y border-gray-300 dark:border-gray-600 py-3 text-gray-900 dark:text-white dark:bg-gray-700 text-lg"
                     />
                     <button
                       onClick={incrementQuantity}
-                      disabled={quantity >= (product.stock || 10)}
+                      disabled={quantity >= (productWithReviews.stock || 10)}
                       className="p-3 border border-gray-300 dark:border-gray-600 rounded-r-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 text-xl font-bold"
                     >
                       +
                     </button>
                     <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">
-                      {product.stock || 10} available
+                      {productWithReviews.stock || 10} available
                     </span>
                   </div>
                 </div>
@@ -369,8 +415,8 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Key Features</h3>
                 <ul className="space-y-1">
-                  {product.features ? (
-                    product.features.map((feature, index) => (
+                  {productWithReviews.features ? (
+                    productWithReviews.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <Check size={16} className="text-green-500 mt-0.5 mr-2 flex-shrink-0" />
                         <span className="text-sm text-gray-600 dark:text-gray-300">{feature}</span>
@@ -400,17 +446,21 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
                 <div className="flex gap-3">
                   <button
                     onClick={handleAddToCart}
-                    disabled={(product.stock || 0) <= 0}
+                    disabled={(productWithReviews.stock || 0) <= 0}
                     className={`flex-1 py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 ${
                       isAddedToCart
                         ? "bg-green-500 hover:bg-green-600 text-white"
-                        : (product.stock || 0) > 0
+                        : (productWithReviews.stock || 0) > 0
                           ? "bg-indigo-600 hover:bg-indigo-700 text-white"
                           : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     }`}
                   >
                     <ShoppingCart size={20} />
-                    {isAddedToCart ? "Added to Cart" : (product.stock || 0) > 0 ? "Add to Cart" : "Out of Stock"}
+                    {isAddedToCart
+                      ? "Added to Cart"
+                      : (productWithReviews.stock || 0) > 0
+                        ? "Add to Cart"
+                        : "Out of Stock"}
                   </button>
                   <button
                     onClick={handleAddToWishlist}
@@ -432,4 +482,3 @@ export default function ProductPreviewModal({ product, isOpen, onClose }: Produc
     </div>
   )
 }
-

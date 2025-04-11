@@ -40,6 +40,28 @@ export default function ProductDetails() {
   const [activeTab, setActiveTab] = useState("description")
   const [isInWishlist, setIsInWishlist] = useState(false)
   const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviews, setReviews] = useState<Review[]>([])
+
+  // Calculate average rating
+  const calculateAverageRating = (reviews: Review[]): number => {
+    if (!reviews || reviews.length === 0) {
+      return 0
+    }
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
+    return totalRating / reviews.length
+  }
+
+  // Fetch reviews for a product
+  const fetchReviews = async (id: string) => {
+    try {
+      const fetchedReviews = await getProductReviews(id)
+      setReviews(fetchedReviews)
+      return fetchedReviews
+    } catch (error) {
+      console.error("Error fetching reviews:", error)
+      return []
+    }
+  }
 
   // Fetch product data
   useEffect(() => {
@@ -48,12 +70,28 @@ export default function ProductDetails() {
 
       setLoading(true)
       try {
+        // Fetch product details
         const productData = await getProductById(productId)
-        setProduct(productData)
+
+        // Fetch reviews for this product
+        const productReviews = await fetchReviews(productId)
+
+        // Calculate average rating
+        const avgRating = calculateAverageRating(productReviews)
+
+        // Update product with reviews data
+        const updatedProduct = {
+          ...productData,
+          reviews: productReviews,
+          reviews_count: productReviews.length,
+          rating: avgRating,
+        }
+
+        setProduct(updatedProduct)
 
         // Check if product is in wishlist
-        if (user && productData.id) {
-          setIsInWishlist(checkIsInWishlist(productData.id))
+        if (user && updatedProduct.id) {
+          setIsInWishlist(checkIsInWishlist(updatedProduct.id))
         }
 
         setLoading(false)
@@ -92,10 +130,16 @@ export default function ProductDetails() {
           filtered.map(async (relatedProduct) => {
             try {
               const reviews = await getProductReviews(relatedProduct.id)
-              return { ...relatedProduct, rating: calculateAverageRating(reviews) }
+              const avgRating = calculateAverageRating(reviews)
+
+              return {
+                ...relatedProduct,
+                rating: avgRating,
+                reviews_count: reviews.length,
+              }
             } catch (error) {
               console.warn(`Error fetching reviews for product ${relatedProduct.id}:`, error)
-              return { ...relatedProduct, rating: 0 }
+              return { ...relatedProduct, rating: 0, reviews_count: 0 }
             }
           }),
         )
@@ -181,17 +225,31 @@ export default function ProductDetails() {
     setActiveTab("reviews")
   }
 
-  const handleReviewSubmitted = () => {
+  const handleReviewSubmitted = async () => {
     setShowReviewForm(false)
-    // Refresh product data to get updated reviews
+
+    // Refresh reviews after submission
     if (productId) {
-      getProductById(productId)
-        .then((productData) => {
-          setProduct(productData)
-        })
-        .catch((err) => {
-          console.error("Error refreshing product data:", err)
-        })
+      try {
+        // Fetch fresh reviews
+        const freshReviews = await fetchReviews(productId)
+
+        // Calculate new average rating
+        const avgRating = calculateAverageRating(freshReviews)
+
+        // Update product with new reviews data
+        setProduct((prev) => ({
+          ...prev,
+          reviews: freshReviews,
+          reviews_count: freshReviews.length,
+          rating: avgRating,
+        }))
+
+        toast.success("Review submitted successfully!")
+      } catch (error) {
+        console.error("Error refreshing reviews:", error)
+        toast.error("Your review was submitted, but we couldn't refresh the reviews list.")
+      }
     }
   }
 
@@ -202,18 +260,7 @@ export default function ProductDetails() {
     const mainImage = product.image_url || "/placeholder.svg?height=600&width=600"
 
     // If product has no additional images, create some placeholders
-    return [
-      mainImage,
-   
-    ]
-  }
-
-  const calculateAverageRating = (reviews: Review[]): number => {
-    if (!reviews || reviews.length === 0) {
-      return 0
-    }
-    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
-    return totalRating / reviews.length
+    return [mainImage]
   }
 
   if (loading) {
@@ -319,9 +366,11 @@ export default function ProductDetails() {
                       {product.category || "Product"}
                     </span>
                     <div className="flex items-center">
-                      <Star className="w-5 h-5 text-yellow-400" />
+                      <Star
+                        className={`w-5 h-5 ${product.rating > 0 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                      />
                       <span className="ml-1 text-gray-700 dark:text-gray-300 font-medium">
-                        {product.rating?.toFixed(1) || "4.5"}
+                        {product.rating?.toFixed(1) || "0.0"}
                       </span>
                       <span className="mx-1 text-gray-400">•</span>
                       <span className="text-gray-500 dark:text-gray-400">{product.reviews_count || 0} reviews</span>
@@ -499,7 +548,7 @@ export default function ProductDetails() {
                     : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
-                Reviews ({product.reviews?.length || product.reviews_count || 0})
+                Reviews ({product.reviews_count || 0})
               </button>
             </nav>
           </div>
@@ -629,10 +678,17 @@ export default function ProductDetails() {
                         ${(relatedProduct.price || 0).toFixed(2)}
                       </span>
                       <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        <Star
+                          className={`w-4 h-4 ${relatedProduct.rating > 0 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                        />
                         <span className="ml-1 text-sm text-gray-600 dark:text-gray-400">
-                          {relatedProduct.rating?.toFixed(1) || "4.5"}
+                          {relatedProduct.rating?.toFixed(1) || "0.0"}
                         </span>
+                        {relatedProduct.reviews_count > 0 && (
+                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                            ({relatedProduct.reviews_count})
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -649,4 +705,3 @@ export default function ProductDetails() {
     </div>
   )
 }
-
